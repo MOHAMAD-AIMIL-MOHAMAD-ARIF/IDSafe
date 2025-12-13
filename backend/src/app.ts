@@ -5,8 +5,8 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import pgSessionFactory from "connect-pg-simple";
-import { Pool } from "pg";
 import morgan from "morgan";
+import { pool, prisma } from "./db.js";
 
 import { env } from "./config/env.js";
 import { httpsOnly } from "./middleware/httpsOnly.js";
@@ -46,10 +46,6 @@ app.use(
 
 // Session store (Postgres) — recommended vs MemoryStore
 const PgSession = pgSessionFactory(session);
-
-const pool = new Pool({
-  connectionString: env.DATABASE_URL,
-});
 
 app.use(
   session({

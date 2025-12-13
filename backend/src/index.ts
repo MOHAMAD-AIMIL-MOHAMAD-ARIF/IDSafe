@@ -1,24 +1,19 @@
-import "dotenv/config";
-import express from "express";
-import { PrismaClient } from "./generated/prisma/client.js";
-import { PrismaPg } from "@prisma/adapter-pg";
-import pg from "pg";
+// src/index.ts
+import { app } from "./app.js";
+import { env } from "./config/env.js";
+import { pool } from "./db.js";
 
-const app = express();
-
-const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
+const server = app.listen(env.PORT, () => {
+  console.log(`Backend running on http://localhost:${env.PORT}`);
 });
 
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+async function shutdown(signal: string) {
+  console.log(`Received ${signal}. Shutting down...`);
+  server.close(async () => {
+    await pool.end();
+    process.exit(0);
+  });
+}
 
-app.get("/health", async (_req, res) => {
-  await prisma.$queryRaw`SELECT 1`;
-  res.json({ status: "ok" });
-});
-
-app.listen(4000, () => {
-  console.log("Backend running on http://localhost:4000");
-});
-
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
