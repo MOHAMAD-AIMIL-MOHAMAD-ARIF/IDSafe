@@ -9,7 +9,11 @@ import connectPgSimple from "connect-pg-simple";
 import { env } from "./config/env.js";
 import { pool, prisma } from "./db.js";
 import { httpsOnly } from "./middleware/httpsOnly.js";
-import { webauthnLimiter, recoveryLimiter } from "./middleware/rateLimiters.js";
+
+import { authWebauthnRouter } from "./routes/auth.webauthn.routes.js";
+import { authDeviceRouter } from "./routes/auth.device.routes.js";
+import { adminWebauthnRouter } from "./routes/admin.webauthn.routes.js";
+
 
 export const app = express();
 
@@ -71,6 +75,18 @@ app.use(
   }),
 );
 
+//---- Mounted routers ----
+
+// End-user WebAuthn + recovery WebAuthn + credential management
+app.use("/auth/webauthn", authWebauthnRouter);
+
+// Device-binding
+app.use("/auth/device", authDeviceRouter);
+
+// Admin WebAuthn config/visibility
+// Ideally: app.use("/admin/webauthn", requireAdmin, adminWebauthnRouter);
+app.use("/admin/webauthn", adminWebauthnRouter);
+
 // ---- Routes ----
 
 // Health: checks DB connectivity through Prisma
@@ -80,28 +96,28 @@ app.get("/health", async (_req, res) => {
 });
 
 // ---- End-user WebAuthn ----
-app.post("/auth/webauthn/register/start", webauthnLimiter, (_req, res) =>
+app.post("/auth/webauthn/register/start", (_req, res) =>
   res.status(501).json({ error: "Not implemented" }),
 );
 
-app.post("/auth/webauthn/register/finish", webauthnLimiter, (_req, res) =>
+app.post("/auth/webauthn/register/finish", (_req, res) =>
   res.status(501).json({ error: "Not implemented" }),
 );
 
-app.post("/auth/webauthn/login/start", webauthnLimiter, (_req, res) =>
+app.post("/auth/webauthn/login/start", (_req, res) =>
   res.status(501).json({ error: "Not implemented" }),
 );
 
-app.post("/auth/webauthn/login/finish", webauthnLimiter, (_req, res) =>
+app.post("/auth/webauthn/login/finish", (_req, res) =>
   res.status(501).json({ error: "Not implemented" }),
 );
 
 // ---- After recovery: WebAuthn re-registration ----
-app.post("/auth/webauthn/recovery/register/start", recoveryLimiter, (_req, res) =>
+app.post("/auth/webauthn/recovery/register/start", (_req, res) =>
   res.status(501).json({ error: "Not implemented" }),
 );
 
-app.post("/auth/webauthn/recovery/register/finish", recoveryLimiter, (_req, res) =>
+app.post("/auth/webauthn/recovery/register/finish", (_req, res) =>
   res.status(501).json({ error: "Not implemented" }),
 );
 
