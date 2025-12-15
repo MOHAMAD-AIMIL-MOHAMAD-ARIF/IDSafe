@@ -84,7 +84,6 @@ app.use("/auth/webauthn", authWebauthnRouter);
 app.use("/auth/device", authDeviceRouter);
 
 // Admin WebAuthn config/visibility
-// Ideally: app.use("/admin/webauthn", requireAdmin, adminWebauthnRouter);
 app.use("/admin/webauthn", adminWebauthnRouter);
 
 // ---- Routes ----

@@ -3,6 +3,20 @@ import { Router } from "express";
 import { recoveryLimiter, webauthnLimiter } from "../middleware/rateLimiters.js";
 import { requireAuth, requireRecoverySession } from "../middleware/auth.js";
 
+import {
+  registerStart,
+  registerFinish,
+  loginStart,
+  loginFinish,
+  listCredentials,
+  deleteCredential,
+} from "../controllers/auth.webauthn.controller.js";
+
+import {
+  recoveryRegisterStart,
+  recoveryRegisterFinish,
+} from "../controllers/auth.webauthn.recovery.controller.js";
+
 export const authWebauthnRouter = Router();
 
 /**
@@ -13,25 +27,11 @@ export const authWebauthnRouter = Router();
  * POST /auth/webauthn/login/finish
  */
 
-// POST /auth/webauthn/register/start
-authWebauthnRouter.post("/register/start", webauthnLimiter, async (_req, res) => {
-  return res.status(501).json({ error: "Not implemented: register/start" });
-});
-
-// POST /auth/webauthn/register/finish
-authWebauthnRouter.post("/register/finish", webauthnLimiter, async (_req, res) => {
-  return res.status(501).json({ error: "Not implemented: register/finish" });
-});
-
-// POST /auth/webauthn/login/start
-authWebauthnRouter.post("/login/start", webauthnLimiter, async (_req, res) => {
-  return res.status(501).json({ error: "Not implemented: login/start" });
-});
-
-// POST /auth/webauthn/login/finish
-authWebauthnRouter.post("/login/finish", webauthnLimiter, async (_req, res) => {
-  return res.status(501).json({ error: "Not implemented: login/finish" });
-});
+// End-user WebAuthn
+authWebauthnRouter.post("/register/start", webauthnLimiter, registerStart);
+authWebauthnRouter.post("/register/finish", webauthnLimiter, registerFinish);
+authWebauthnRouter.post("/login/start", webauthnLimiter, loginStart);
+authWebauthnRouter.post("/login/finish", webauthnLimiter, loginFinish);
 
 /**
  * After recovery
@@ -42,24 +42,19 @@ authWebauthnRouter.post("/login/finish", webauthnLimiter, async (_req, res) => {
  * They are rate-limited using the recovery limiter.
  */
 
-// POST /auth/webauthn/recovery/register/start
+// After recovery WebAuthn (tightly scoped)
 authWebauthnRouter.post(
   "/recovery/register/start",
   recoveryLimiter,
-  requireRecoverySession({ ttlMs: 15 * 60 * 1000 /*, tokenType: "MAGIC_LINK"*/ }),
-  async (_req, res) => {
-    return res.status(501).json({ error: "Not implemented: recovery/register/start" });
-  },
+  requireRecoverySession({ ttlMs: 15 * 60 * 1000 /*, tokenType: "MAGIC_LINK"*/  }),
+  recoveryRegisterStart,
 );
 
-// POST /auth/webauthn/recovery/register/finish
 authWebauthnRouter.post(
   "/recovery/register/finish",
   recoveryLimiter,
-  requireRecoverySession({ ttlMs: 15 * 60 * 1000 /*, tokenType: "MAGIC_LINK"*/ }),
-  async (_req, res) => {
-    return res.status(501).json({ error: "Not implemented: recovery/register/finish" });
-  },
+  requireRecoverySession({ ttlMs: 15 * 60 * 1000 /*, tokenType: "MAGIC_LINK"*/  }),
+  recoveryRegisterFinish,
 );
 
 /**
@@ -70,12 +65,6 @@ authWebauthnRouter.post(
  * (No rate limiter by default; you can add one later if you want.)
  */
 
-// GET /auth/webauthn/credentials
-authWebauthnRouter.get("/credentials", requireAuth, async (_req, res) => {
-  return res.status(501).json({ error: "Not implemented: list credentials" });
-});
-
-// DELETE /auth/webauthn/credentials/:credentialId
-authWebauthnRouter.delete("/credentials/:credentialId", requireAuth, async (_req, res) => {
-  return res.status(501).json({ error: "Not implemented: delete credential" });
-});
+// Credential management (requires full auth)
+authWebauthnRouter.get("/credentials", requireAuth, listCredentials);
+authWebauthnRouter.delete("/credentials/:credentialId", requireAuth, deleteCredential);

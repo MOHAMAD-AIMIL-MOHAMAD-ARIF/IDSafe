@@ -2,6 +2,12 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/auth.js";
 
+import {
+  adminListCredentials,
+  adminGetPolicy,
+  adminUpdatePolicy,
+} from "../controllers/admin.webauthn.controller.js";
+
 export const adminWebauthnRouter = Router();
 
 // Protect the whole router
@@ -17,17 +23,6 @@ adminWebauthnRouter.use(requireAdmin);
  * (see app.use() section below).
  */
 
-// GET /admin/webauthn/credentials
-adminWebauthnRouter.get("/credentials", async (_req, res) => {
-  return res.status(501).json({ error: "Not implemented: admin list credentials" });
-});
-
-// GET /admin/webauthn/policy
-adminWebauthnRouter.get("/policy", async (_req, res) => {
-  return res.status(501).json({ error: "Not implemented: admin get policy" });
-});
-
-// PUT /admin/webauthn/policy
-adminWebauthnRouter.put("/policy", async (_req, res) => {
-  return res.status(501).json({ error: "Not implemented: admin update policy" });
-});
+adminWebauthnRouter.get("/credentials", adminListCredentials);
+adminWebauthnRouter.get("/policy", adminGetPolicy);
+adminWebauthnRouter.put("/policy", adminUpdatePolicy);
