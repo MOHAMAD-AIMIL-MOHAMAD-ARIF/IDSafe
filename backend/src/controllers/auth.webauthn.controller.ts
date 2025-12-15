@@ -54,26 +54,50 @@ export async function loginFinish(req: Request, res: Response) {
  */
 export async function listCredentials(req: Request, res: Response) {
   const userId = req.session.userId!;
-  // TODO: query WebAuthnCredential where userId = session.userId
-  // const creds = await prisma.webAuthnCredential.findMany({ where: { userId } });
-  // return res.json({ credentials: creds });
-  return res.status(501).json({ error: "Not implemented: /auth/webauthn/credentials", userId });
+  const credentials = await prisma.webauthnCredential.findMany({
+    where: { userId, isActive: true },
+    orderBy: { createdAt: "desc" },
+    select: {
+      credentialId: true,
+      externalCredentialId: true,
+      aaguid: true,
+      attestationFormat: true,
+      signCount: true,
+      createdAt: true,
+      lastUsedAt: true,
+      isActive: true,
+    },
+  });
+
+  return res.json({ credentials });
 }
 
 /**
- * DELETE /auth/webauthn/credentials/:credentialId  (requires requireAuth)
+ * DELETE /auth/webauthn/credentials/:credentialId (requires requireAuth)
+ *
+ * Recommended: "soft delete" by setting isActive=false (keeps auditability).
  */
 export async function deleteCredential(req: Request, res: Response) {
   const userId = req.session.userId!;
-  const credentialIdParam = req.params.credentialId;
+  const credentialId = Number(req.params.credentialId);
 
-  // TODO:
-  // - authorize: ensure credential belongs to userId
-  // - delete credential row
-  // - audit log
-  return res.status(501).json({
-    error: "Not implemented: DELETE /auth/webauthn/credentials/:credentialId",
-    userId,
-    credentialId: credentialIdParam,
+  if (!Number.isInteger(credentialId) || credentialId <= 0) {
+    return res.status(400).json({ error: "Invalid credentialId" });
+  }
+
+  const existing = await prisma.webauthnCredential.findFirst({
+    where: { credentialId, userId, isActive: true },
+    select: { credentialId: true },
   });
+
+  if (!existing) {
+    return res.status(404).json({ error: "Credential not found" });
+  }
+
+  await prisma.webauthnCredential.update({
+    where: { credentialId },
+    data: { isActive: false },
+  });
+
+  return res.json({ ok: true, credentialId });
 }
