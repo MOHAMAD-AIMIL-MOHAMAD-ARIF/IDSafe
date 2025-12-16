@@ -13,6 +13,7 @@ import { httpsOnly } from "./middleware/httpsOnly.js";
 import { authWebauthnRouter } from "./routes/auth.webauthn.routes.js";
 import { authDeviceRouter } from "./routes/auth.device.routes.js";
 import { adminWebauthnRouter } from "./routes/admin.webauthn.routes.js";
+import { recoveryRouter } from "./routes/recovery.routes.js";
 
 
 export const app = express();
@@ -77,7 +78,7 @@ app.use(
 
 //---- Mounted routers ----
 
-// End-user WebAuthn + recovery WebAuthn + credential management
+// End-user WebAuthn + recovery WebAuthn re-registration + credential management
 app.use("/auth/webauthn", authWebauthnRouter);
 
 // Device-binding
@@ -85,6 +86,10 @@ app.use("/auth/device", authDeviceRouter);
 
 // Admin WebAuthn config/visibility
 app.use("/admin/webauthn", adminWebauthnRouter);
+
+// Recovery route (magic link, etc.)
+app.use("/recovery", recoveryRouter);
+
 
 // ---- Routes ----
 

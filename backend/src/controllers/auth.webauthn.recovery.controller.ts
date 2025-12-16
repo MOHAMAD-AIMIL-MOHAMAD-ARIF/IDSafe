@@ -27,7 +27,7 @@ export async function recoveryRegisterStart(req: Request, res: Response) {
  * On success:
  * - verifyRegistrationResponse(...)
  * - store credential
- * - promote recovery session → normal session
+ * - promote recovery session → normal session, and
  * - rotate session id to prevent fixation (req.session.regenerate)
  */
 export async function recoveryRegisterFinish(req: Request, res: Response) {
