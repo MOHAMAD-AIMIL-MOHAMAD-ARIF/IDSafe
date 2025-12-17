@@ -98,14 +98,19 @@ async function main() {
       description: "Default Argon2id time cost for new users.",
     },
     {
-      configKey: "kdf.argon2id.memoryMiB.default",
-      configValue: "64",
-      description: "Default Argon2id memory cost (MiB) for new users.",
+      configKey: "kdf.argon2id.memoryCostKiB.default",
+      configValue: "65536",
+      description: "Default Argon2id memory cost (KiB) for new users.",
     },
     {
       configKey: "kdf.argon2id.parallelism.default",
       configValue: "1",
       description: "Default Argon2id parallelism for new users.",
+    },
+    {
+      configKey: "kdf.argon2id.hashLenBytes.default",
+      configValue: "32",
+      description: "Default Argon2id hash length bytes for new users.",
     },
 
     // WebAuthn attestation policy controls (admin-configurable) :contentReference[oaicite:14]{index=14}
@@ -181,7 +186,6 @@ async function main() {
         configKey: c.configKey,
         configValue: c.configValue,
         description: c.description ?? null,
-        updatedAt: now,
         updatedByUserId: admin.userId, // FK → USER(user_id) :contentReference[oaicite:16]{index=16}
       },
       update: {
