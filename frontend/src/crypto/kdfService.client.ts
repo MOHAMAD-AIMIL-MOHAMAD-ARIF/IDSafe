@@ -39,5 +39,5 @@ export async function deriveKek256(passphrase: string, params: Argon2idParams): 
   });
 
   // result.hash is Uint8Array
-  return result.hash as Uint8Array;
+  return result.hash;
 }
