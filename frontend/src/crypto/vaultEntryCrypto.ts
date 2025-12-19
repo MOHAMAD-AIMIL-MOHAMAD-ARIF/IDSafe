@@ -21,19 +21,6 @@ function b64UrlToBytes(b64url: string): Uint8Array {
   return out;
 }
 
-// --------------- optional AAD ---------------
-function toAadBytes(aad?: string | Uint8Array): Uint8Array | undefined {
-  if (!aad) return undefined;
-
-  if (typeof aad === "string") {
-    // TextEncoder output is already Uint8Array, but we copy to normalize typing
-    const enc = new TextEncoder().encode(aad);
-    return new Uint8Array(enc);
-  }
-  // Copy to force a real ArrayBuffer-backed Uint8Array
-  return new Uint8Array(aad);
-}
-
 // --------------- Types matching your Prisma VaultEntry ---------------
 export type VaultEntryCryptoFields = {
   ciphertextBlob: string; // base64url(ciphertext)
@@ -46,21 +33,16 @@ export type VaultEntryCryptoFields = {
 export async function encryptVaultEntryBytes(args: {
   vaultKey: CryptoKey;           // AES-GCM key
   plaintext: Uint8Array;         // data to encrypt
-  aad?: string | Uint8Array;     // optional
   metadataJson?: unknown;        // optional (store non-sensitive info only)
 }): Promise<VaultEntryCryptoFields> {
-  const { vaultKey, plaintext, aad, metadataJson } = args;
+  const { vaultKey, plaintext, metadataJson } = args;
 
   // 12-byte IV recommended for AES-GCM
   const ivBytes = crypto.getRandomValues(new Uint8Array(12));
-  const aadBytes = toAadBytes(aad);
-  const additionalData: ArrayBuffer | undefined = aadBytes
-    ? new Uint8Array(aadBytes).buffer // forces real ArrayBuffer
-    : undefined;
 
   const ptBuf = new Uint8Array(plaintext).buffer; // ArrayBuffer
   const ctPlusTagBuf = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: new Uint8Array(ivBytes), additionalData },
+    { name: "AES-GCM", iv: new Uint8Array(ivBytes) },
     vaultKey,
     ptBuf,
   );
@@ -86,17 +68,12 @@ export async function encryptVaultEntryBytes(args: {
 export async function decryptVaultEntryBytes(args: {
   vaultKey: CryptoKey;
   fields: Pick<VaultEntryCryptoFields, "ciphertextBlob" | "iv" | "authTag">;
-  aad?: string | Uint8Array;
 }): Promise<Uint8Array> {
-  const { vaultKey, fields, aad } = args;
+  const { vaultKey, fields } = args;
 
   const iv = new Uint8Array(b64UrlToBytes(fields.iv));
   const ciphertext = new Uint8Array(b64UrlToBytes(fields.ciphertextBlob));
   const tag = new Uint8Array(b64UrlToBytes(fields.authTag));
-  const aadBytes = toAadBytes(aad);
-  const additionalData: ArrayBuffer | undefined = aadBytes
-    ? new Uint8Array(aadBytes).buffer
-    : undefined;
 
   // Re-combine ciphertext || tag for WebCrypto decrypt
   const ctPlusTag = new Uint8Array(ciphertext.length + tag.length);
@@ -104,7 +81,7 @@ export async function decryptVaultEntryBytes(args: {
   ctPlusTag.set(tag, ciphertext.length);
 
   const ptBuf = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv, additionalData },
+    { name: "AES-GCM", iv },
     vaultKey,
     ctPlusTag,
   );
@@ -116,14 +93,12 @@ export async function decryptVaultEntryBytes(args: {
 export async function encryptVaultEntryText(args: {
   vaultKey: CryptoKey;
   plaintext: string;
-  aad?: string | Uint8Array;
   metadataJson?: unknown;
 }): Promise<VaultEntryCryptoFields> {
   const bytes = new TextEncoder().encode(args.plaintext);
   return encryptVaultEntryBytes({
     vaultKey: args.vaultKey,
     plaintext: bytes,
-    aad: args.aad,
     metadataJson: args.metadataJson,
   });
 }
@@ -131,7 +106,6 @@ export async function encryptVaultEntryText(args: {
 export async function decryptVaultEntryText(args: {
   vaultKey: CryptoKey;
   fields: Pick<VaultEntryCryptoFields, "ciphertextBlob" | "iv" | "authTag">;
-  aad?: string | Uint8Array;
 }): Promise<string> {
   const bytes = await decryptVaultEntryBytes(args);
   return new TextDecoder().decode(bytes);
@@ -140,14 +114,12 @@ export async function decryptVaultEntryText(args: {
 export async function encryptVaultEntryJson(args: {
   vaultKey: CryptoKey;
   value: unknown;
-  aad?: string | Uint8Array;
   metadataJson?: unknown;
 }): Promise<VaultEntryCryptoFields> {
   const json = JSON.stringify(args.value);
   return encryptVaultEntryText({
     vaultKey: args.vaultKey,
     plaintext: json,
-    aad: args.aad,
     metadataJson: args.metadataJson,
   });
 }
@@ -155,7 +127,6 @@ export async function encryptVaultEntryJson(args: {
 export async function decryptVaultEntryJson<T>(args: {
   vaultKey: CryptoKey;
   fields: Pick<VaultEntryCryptoFields, "ciphertextBlob" | "iv" | "authTag">;
-  aad?: string | Uint8Array;
 }): Promise<T> {
   const json = await decryptVaultEntryText(args);
   return JSON.parse(json) as T;
