@@ -14,7 +14,7 @@ import { authWebauthnRouter } from "./routes/auth.webauthn.routes.js";
 import { authDeviceRouter } from "./routes/auth.device.routes.js";
 import { adminWebauthnRouter } from "./routes/admin.webauthn.routes.js";
 import { recoveryRouter } from "./routes/recovery.routes.js";
-
+import { vaultEntriesRouter } from "./routes/vault.entries.routes.js";
 
 export const app = express();
 
@@ -90,6 +90,8 @@ app.use("/admin/webauthn", adminWebauthnRouter);
 // Recovery route (magic link, etc.)
 app.use("/recovery", recoveryRouter);
 
+// Vault entries router
+app.use("/vault/entries", vaultEntriesRouter);
 
 // ---- Routes ----
 

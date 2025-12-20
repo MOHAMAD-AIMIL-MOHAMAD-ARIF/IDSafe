@@ -34,7 +34,7 @@ function getSession(req: Request) {
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const session = getSession(req);
 
-  if (!session?.userId) {
+  if (!session || typeof session.userId !== "number") {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

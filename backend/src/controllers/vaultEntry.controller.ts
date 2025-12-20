@@ -150,7 +150,7 @@ export async function updateVaultEntry(req: Request, res: Response) {
 
   // Ensure ownership + not deleted
   const existing = await prisma.vaultEntry.findFirst({
-    where: { entryId: idParsed.data.entryId, userId, isDeleted: false },
+    where: { entryId: idParsed.data.entryId, userId: userId, isDeleted: false },
     select: { entryId: true },
   });
 
