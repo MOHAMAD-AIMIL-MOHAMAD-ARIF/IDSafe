@@ -13,6 +13,7 @@ export type AuditEventType =
   | "VAULT.ENTRY.CREATE"
   | "VAULT.ENTRY.UPDATE"
   | "VAULT.ENTRY.DELETE"
+  | "VAULT.ENTRY.ACCESS.DENIED"
   | (string & {}); // allow custom strings
 
 export type AuditLogWrite = {

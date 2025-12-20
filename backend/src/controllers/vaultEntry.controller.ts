@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { Prisma } from "../generated/prisma/client.js";
 import type { Prisma as PrismaTypes } from "../generated/prisma/client.js";
+import { auditFromReq } from "../services/auditLogService.js";
 
 const idParamSchema = z.object({
   entryId: z.coerce.number().int().positive(),
@@ -41,6 +42,14 @@ const selectVaultEntry = {
   deletedAt: true,
   isDeleted: true,
 } as const;
+
+function safeLen(s: string): number {
+  return s.length;
+}
+
+function didSet<T>(v: T | undefined): boolean {
+  return v !== undefined;
+}
 
 /**
  * GET /vault/entries?includeDeleted=true|false
@@ -84,7 +93,20 @@ export async function getVaultEntry(req: Request, res: Response) {
     select: selectVaultEntry,
   });
 
-  if (!row) return res.status(404).json({ error: "VaultEntry not found" });
+  if (!row) {
+    await auditFromReq(prisma, req, {
+        userId,               // actor is the logged-in user
+        actorId: userId,
+        eventType: "VAULT.ENTRY.ACCESS.DENIED",
+        detailsJson: {
+        action: "GET",
+        entryId: parsed.data.entryId,
+        includeDeleted,
+        reason: "NOT_FOUND_OR_NOT_OWNED_OR_DELETED",
+        },
+    });
+    return res.status(404).json({ error: "VaultEntry not found" });
+  }
 
   res.setHeader("Cache-Control", "no-store");
   return res.json({ ok: true, entry: row });
@@ -125,6 +147,20 @@ export async function createVaultEntry(req: Request, res: Response) {
     select: selectVaultEntry,
   });
 
+  await auditFromReq(prisma, req, {
+    userId,
+    actorId: userId,
+    eventType: "VAULT.ENTRY.CREATE",
+    detailsJson: {
+        entryId: created.entryId,
+        // Do NOT log ciphertext / iv / authTag content
+        ciphertextLen: safeLen(parsed.data.ciphertextBlob),
+        ivLen: safeLen(parsed.data.iv),
+        authTagLen: safeLen(parsed.data.authTag),
+        hasMetadata: meta !== undefined && meta !== null,
+    },
+  });
+
   res.setHeader("Cache-Control", "no-store");
   return res.status(201).json({ ok: true, entry: created });
 }
@@ -154,7 +190,19 @@ export async function updateVaultEntry(req: Request, res: Response) {
     select: { entryId: true },
   });
 
-  if (!existing) return res.status(404).json({ error: "VaultEntry not found" });
+  if (!existing) {
+    await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "VAULT.ENTRY.ACCESS.DENIED",
+        detailsJson: {
+        action: "UPDATE",
+        entryId: idParsed.data.entryId,
+        reason: "NOT_FOUND_OR_NOT_OWNED_OR_DELETED",
+        },
+    });
+    return res.status(404).json({ error: "VaultEntry not found" });
+  }
 
   const now = new Date();
 
@@ -166,7 +214,6 @@ export async function updateVaultEntry(req: Request, res: Response) {
   if (bodyParsed.data.ciphertextBlob !== undefined) data.ciphertextBlob = bodyParsed.data.ciphertextBlob;
   if (bodyParsed.data.iv !== undefined) data.iv = bodyParsed.data.iv;
   if (bodyParsed.data.authTag !== undefined) data.authTag = bodyParsed.data.authTag;
-
   if (bodyParsed.data.metadataJson !== undefined) {
     data.metadataJson =
       bodyParsed.data.metadataJson === null
@@ -179,6 +226,33 @@ export async function updateVaultEntry(req: Request, res: Response) {
     data,
     select: selectVaultEntry,
   });
+
+  const changedFields = [
+    ...(didSet(bodyParsed.data.ciphertextBlob) ? ["ciphertextBlob"] : []),
+    ...(didSet(bodyParsed.data.iv) ? ["iv"] : []),
+    ...(didSet(bodyParsed.data.authTag) ? ["authTag"] : []),
+    ...(bodyParsed.data.metadataJson !== undefined ? ["metadataJson"] : []),
+  ];
+
+    await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "VAULT.ENTRY.UPDATE",
+        detailsJson: {
+            entryId: updated.entryId,
+            changedFields,
+            // lengths only (never values)
+            ciphertextLen: bodyParsed.data.ciphertextBlob ? safeLen(bodyParsed.data.ciphertextBlob) : undefined,
+            ivLen: bodyParsed.data.iv ? safeLen(bodyParsed.data.iv) : undefined,
+            authTagLen: bodyParsed.data.authTag ? safeLen(bodyParsed.data.authTag) : undefined,
+            metadataSet:
+            bodyParsed.data.metadataJson === undefined
+                ? "unchanged"
+                : bodyParsed.data.metadataJson === null
+                ? "cleared"
+                : "updated",
+        },
+    });
 
   res.setHeader("Cache-Control", "no-store");
   return res.json({ ok: true, entry: updated });
@@ -202,7 +276,20 @@ export async function softDeleteVaultEntry(req: Request, res: Response) {
     select: { entryId: true },
   });
 
-  if (!existing) return res.status(404).json({ error: "VaultEntry not found" });
+  if (!existing) {
+    await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "VAULT.ENTRY.ACCESS.DENIED",
+        detailsJson: {
+            action: "DELETE",
+            entryId: parsed.data.entryId,
+            reason: "NOT_FOUND_OR_NOT_OWNED_OR_ALREADY_DELETED",
+        },
+    });
+
+    return res.status(404).json({ error: "VaultEntry not found" });
+  }
 
   const now = new Date();
 
@@ -214,6 +301,16 @@ export async function softDeleteVaultEntry(req: Request, res: Response) {
       updatedAt: now,
     },
     select: selectVaultEntry,
+  });
+
+  await auditFromReq(prisma, req, {
+    userId,
+    actorId: userId,
+    eventType: "VAULT.ENTRY.DELETE",
+    detailsJson: {
+        entryId: updated.entryId,
+        softDelete: true,
+    },
   });
 
   res.setHeader("Cache-Control", "no-store");
