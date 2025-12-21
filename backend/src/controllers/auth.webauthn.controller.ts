@@ -216,9 +216,12 @@ export async function registerFinish(req: Request, res: Response) {
   // Extract credential info
   // In your @simplewebauthn/server version, registrationInfo exposes `credential`
     const cred = registrationInfo.credential;
+    
+    function credentialIdToString(id: string | Uint8Array): string {
+        return typeof id === "string" ? id : u8ToB64url(id);
+    }
+    const externalCredentialId = credentialIdToString(cred.id as any);
 
-    // In this build, `cred.id` is already a string (usually base64url)
-    const externalCredentialId = cred.id;
     // `cred.publicKey` is bytes, so convert to base64url for DB storage
     const publicKey = u8ToB64url(cred.publicKey);
 
