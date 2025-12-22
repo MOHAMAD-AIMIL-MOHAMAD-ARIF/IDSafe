@@ -43,6 +43,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "X-Requested-With"],
+    optionsSuccessStatus: 204,
   }),
 );
 
@@ -94,58 +95,15 @@ app.use("/recovery", recoveryRouter);
 app.use("/vault/entries", vaultEntriesRouter);
 
 
-// ---- Routes ----
-
 // Health: checks DB connectivity through Prisma
 app.get("/health", async (_req, res) => {
   await prisma.$queryRaw`SELECT 1`;
   res.json({ status: "ok" });
 });
 
-// ---- End-user WebAuthn ----
-app.post("/auth/webauthn/register/start");
-
-app.post("/auth/webauthn/register/finish");
-
-app.post("/auth/webauthn/login/start");
-
-app.post("/auth/webauthn/login/finish");
-
-// ---- WebAuthn credential management (NOT required by NFR-S8, so no limiter by default) ----
-app.get("/auth/webauthn/credentials");
-
-app.delete("/auth/webauthn/credentials/:credentialId");
-
-// ---- Recovery ----
-app.post("/recovery/request");
-
-app.get("/recovery/verify");
-
-app.get("/recovery/params");
-
-app.post("/recovery/data");
-
-// ---- After recovery: WebAuthn re-registration ----
-app.post("/auth/webauthn/recovery/register/start");
-
-app.post("/auth/webauthn/recovery/register/finish");
-
-// ---- Device-binding (not required by NFR-S8; optionally add a limiter later if you want) ----
-app.post("/auth/device/bind");
-
-app.get("/auth/device/list");
-
-app.delete("/auth/device/:deviceId");
-
-// ---- Admin WebAuthn policy/visibility (not part of NFR-S8) ----
-app.get("/admin/webauthn/credentials");
-
-app.get("/admin/webauthn/policy");
-
-app.put("/admin/webauthn/policy");
 
 // NFR-S5: Invalidate session on logout
-app.post("/api/auth/logout", (req, res) => {
+app.post("/auth/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) return res.status(500).json({ error: "Failed to logout" });
 
