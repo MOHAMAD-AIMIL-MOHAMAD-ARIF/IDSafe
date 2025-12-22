@@ -12,6 +12,12 @@ const bodySchema = z.object({
   parallelism: z.number().int().min(1).max(8),
 });
 
+/**
+ * POST /recovery/data (requires normal login)
+ * 
+ * Stores/updates the recovery data for the logged-in user.
+ */
+
 export async function postRecoveryData(req: Request, res: Response) {
   // Must be logged in normally (not recovery session)
   const userId = req.session.userId;

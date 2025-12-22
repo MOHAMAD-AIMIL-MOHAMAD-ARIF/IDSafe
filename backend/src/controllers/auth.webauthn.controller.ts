@@ -5,10 +5,13 @@ import { z } from "zod";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
   type VerifiedRegistrationResponse,
 } from "@simplewebauthn/server";
 import { auditFromReq } from "../services/auditLogService.js";
-import { u8ToB64url, bufToB64url } from "../utils/base64url.js";
+import { bufToB64url } from "../utils/base64url.js";
+import { Buffer } from "node:buffer";
 
 const registerStartSchema = z.object({
   email: z.email(),
@@ -16,6 +19,16 @@ const registerStartSchema = z.object({
 
 const registerFinishSchema = z.object({
   // This is the JSON body returned from `startRegistration(...)` in the browser
+  credential: z.unknown(),
+});
+
+const loginStartSchema = z.object({
+  email: z.email(),
+});
+
+const loginFinishSchema = z.object({
+  // The browser sends AuthenticationResponseJSON here.
+  // Keep runtime validation light; @simplewebauthn/server will validate structure.
   credential: z.unknown(),
 });
 
@@ -54,6 +67,26 @@ function userIdToUserHandle(userId: number): Uint8Array<ArrayBuffer> {
   const ab = b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
 
   return new Uint8Array(ab);
+}
+
+// -------------------- base64url helpers --------------------
+// Stores in DB as base64url strings; convert to Uint8Array<ArrayBuffer> for @simplewebauthn/server.
+function b64urlToU8(b64url: string): Uint8Array<ArrayBuffer> {
+  const buf = Buffer.from(b64url, "base64url");
+  // Slice to a standalone ArrayBuffer region (avoids ArrayBufferLike / SharedArrayBuffer typing issues)
+  const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  return new Uint8Array(ab);
+}
+
+function u8ToB64url(u8: Uint8Array): string {
+  return Buffer.from(u8).toString("base64url");
+}
+
+// -------------------- session helper (fixation-safe) --------------------
+function regenerateSession(req: Request): Promise<void> {
+  return new Promise((resolve, reject) => {
+    req.session.regenerate((err) => (err ? reject(err) : resolve()));
+  });
 }
 
 /**
@@ -216,7 +249,7 @@ export async function registerFinish(req: Request, res: Response) {
   // Extract credential info
   // In your @simplewebauthn/server version, registrationInfo exposes `credential`
     const cred = registrationInfo.credential;
-    
+
     function credentialIdToString(id: string | Uint8Array): string {
         return typeof id === "string" ? id : u8ToB64url(id);
     }
@@ -290,29 +323,217 @@ export async function registerFinish(req: Request, res: Response) {
   }
 }
 
-/**
- * POST /auth/webauthn/login/start
- */
+// =====================================================
+// POST /auth/webauthn/login/start
+// Body: { email }
+// =====================================================
 export async function loginStart(req: Request, res: Response) {
-  // TODO:
-  // - look up user credentials
-  // - generateAuthenticationOptions(...)
-  // - store challenge in session/temp store
-  return res.status(501).json({ error: "Not implemented: /auth/webauthn/login/start" });
+  const body = loginStartSchema.safeParse(req.body);
+  if (!body.success) {
+    return res.status(400).json({ error: "Invalid payload", issues: body.error.issues });
+  }
+
+  const { rpID } = getWebAuthnEnv();
+  const email = body.data.email;
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { userId: true, email: true, status: true, role: true },
+  });
+
+  if (!user || user.status !== "ACTIVE") {
+    await auditFromReq(prisma, req, {
+      userId: user?.userId ?? null,
+      actorId: user?.userId ?? null,
+      eventType: "WEBAUTHN.LOGIN.START.FAIL",
+      detailsJson: { reason: !user ? "USER_NOT_FOUND" : "USER_NOT_ACTIVE" },
+    });
+    return res.status(403).json({ error: "Account is not active" });
+  }
+
+  const creds = await prisma.webauthnCredential.findMany({
+    where: { userId: user.userId, isActive: true },
+    select: { externalCredentialId: true },
+  });
+
+  if (creds.length === 0) {
+    await auditFromReq(prisma, req, {
+      userId: user.userId,
+      actorId: user.userId,
+      eventType: "WEBAUTHN.LOGIN.START.FAIL",
+      detailsJson: { reason: "NO_ACTIVE_CREDENTIALS" },
+    });
+    return res.status(400).json({ error: "No active credentials for this account" });
+  }
+
+  const allowCredentials = creds.map((c) => ({
+    id: c.externalCredentialId, // string (base64url)
+    type: "public-key" as const,
+    // transports: ["internal"] as const, // optional
+  }));
+
+  const options = await generateAuthenticationOptions({
+    rpID,
+    allowCredentials,
+    userVerification: "preferred",
+    // timeout: 60000, // optional
+  });
+
+  // Save challenge + userId for finish
+  req.session.webauthnLogin = {
+    challenge: options.challenge,
+    userId: user.userId,
+    createdAtMs: Date.now(),
+  };
+
+  await auditFromReq(prisma, req, {
+    userId: user.userId,
+    actorId: user.userId,
+    eventType: "WEBAUTHN.LOGIN.START.OK",
+    detailsJson: { allowCredentialsCount: allowCredentials.length },
+  });
+
+  res.setHeader("Cache-Control", "no-store");
+  return res.json({ ok: true, options });
 }
 
-/**
- * POST /auth/webauthn/login/finish
- */
+// =====================================================
+// POST /auth/webauthn/login/finish
+// Body: { credential }
+// =====================================================
 export async function loginFinish(req: Request, res: Response) {
-  // TODO:
-  // - verifyAuthenticationResponse(...)
-  // - update signCount
-  // - create normal session (cookie) => req.session.userId, req.session.role
-  // Example:
-  // req.session.userId = user.userId;
-  // req.session.role = user.role;
-  return res.status(501).json({ error: "Not implemented: /auth/webauthn/login/finish" });
+  const body = loginFinishSchema.safeParse(req.body);
+  if (!body.success) {
+    return res.status(400).json({ error: "Invalid payload", issues: body.error.issues });
+  }
+
+  const pending = req.session.webauthnLogin;
+  if (!pending?.challenge || !pending.userId) {
+    return res.status(400).json({ error: "No pending WebAuthn login (missing challenge)" });
+  }
+
+  const { rpID, expectedOrigin } = getWebAuthnEnv();
+
+  const user = await prisma.user.findUnique({
+    where: { userId: pending.userId },
+    select: { userId: true, email: true, status: true, role: true },
+  });
+
+  if (!user || user.status !== "ACTIVE") {
+    await auditFromReq(prisma, req, {
+      userId: pending.userId,
+      actorId: pending.userId,
+      eventType: "WEBAUTHN.LOGIN.FAIL",
+      detailsJson: { reason: "USER_NOT_FOUND_OR_NOT_ACTIVE" },
+    });
+    return res.status(403).json({ error: "Account is not active" });
+  }
+
+  // Cast because the incoming type is a WebAuthn JSON payload.
+  // @simplewebauthn/server performs its own structural checks.
+  const credential = body.data.credential as any;
+
+  // Find the credential row by the WebAuthn credential ID (base64url string)
+  // Browser JSON typically includes `id` as base64url.
+  const credRow = await prisma.webauthnCredential.findFirst({
+    where: {
+      userId: user.userId,
+      isActive: true,
+      externalCredentialId: String(credential?.id ?? ""),
+    },
+    select: {
+      credentialId: true,
+      externalCredentialId: true,
+      publicKey: true,
+      signCount: true,
+    },
+  });
+
+  if (!credRow) {
+    await auditFromReq(prisma, req, {
+      userId: user.userId,
+      actorId: user.userId,
+      eventType: "WEBAUTHN.LOGIN.FAIL",
+      detailsJson: { reason: "CREDENTIAL_NOT_FOUND" },
+    });
+    return res.status(401).json({ error: "Invalid credential" });
+  }
+
+  let verification: any;
+  try {
+    verification = await verifyAuthenticationResponse({
+      response: credential, // AuthenticationResponseJSON
+      expectedChallenge: pending.challenge,
+      expectedOrigin,
+      expectedRPID: rpID,
+      credential: {
+        id: credRow.externalCredentialId,          // Uint8Array
+        publicKey: b64urlToU8(credRow.publicKey),              // Uint8Array
+        counter: credRow.signCount ?? 0,
+        //transports: [],                                        // optional
+      },
+      requireUserVerification: false,
+    });
+  } catch (e: any) {
+    await auditFromReq(prisma, req, {
+      userId: user.userId,
+      actorId: user.userId,
+      eventType: "WEBAUTHN.LOGIN.FAIL",
+      detailsJson: { reason: "VERIFY_THROW", message: String(e?.message ?? e) },
+    });
+    return res.status(401).json({ error: "Authentication failed" });
+  } finally {
+    // One-time use challenge
+    delete req.session.webauthnLogin;
+  }
+
+  const { verified, authenticationInfo } = verification ?? {};
+  if (!verified || !authenticationInfo) {
+    await auditFromReq(prisma, req, {
+      userId: user.userId,
+      actorId: user.userId,
+      eventType: "WEBAUTHN.LOGIN.FAIL",
+      detailsJson: { reason: "NOT_VERIFIED" },
+    });
+    return res.status(401).json({ error: "Authentication failed" });
+  }
+
+  const now = new Date();
+  const newCounter: number | undefined = authenticationInfo.newCounter;
+
+  await prisma.$transaction([
+    prisma.webauthnCredential.update({
+      where: { credentialId: credRow.credentialId },
+      data: {
+        signCount: typeof newCounter === "number" ? newCounter : credRow.signCount,
+        lastUsedAt: now,
+      },
+    }),
+    prisma.user.update({
+      where: { userId: user.userId },
+      data: { lastLoginAt: now },
+    }),
+  ]);
+
+  // Create a fresh session (prevents session fixation)
+  await regenerateSession(req);
+  req.session.userId = user.userId;
+  req.session.role = user.role;
+
+  await auditFromReq(prisma, req, {
+    userId: user.userId,
+    actorId: user.userId,
+    eventType: "WEBAUTHN.LOGIN.OK",
+    detailsJson: {
+      credentialId: credRow.credentialId,
+      // Do NOT log vault plaintext, passphrases, or keys.
+      // Also avoid logging raw signature/authenticatorData.
+      signCount: typeof newCounter === "number" ? newCounter : credRow.signCount,
+    },
+  });
+
+  res.setHeader("Cache-Control", "no-store");
+  return res.json({ ok: true });
 }
 
 /**

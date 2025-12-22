@@ -12,5 +12,12 @@ declare module "express-session" {
       challenge: string; // base64url string from SimpleWebAuthn
       createdAt: string; // ISO
     };
+
+    // WebAuthn login
+    webauthnLogin?: {
+      challenge: string;
+      userId: number;
+      createdAtMs: number;
+    };
   }
 }

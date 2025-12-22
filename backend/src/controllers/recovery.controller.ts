@@ -26,7 +26,7 @@ function hashToken(rawToken: string): string {
  * recovery session:
  *   req.session.recovery = { userId, tokenId, verifiedAt }
  *
- * Responds with a redirect to the frontend recovery UI (recommended),
+ * Responds with a redirect to the frontend recovery UI,
  * or JSON if the request indicates API usage.
  */
 export async function verifyRecoveryMagicLink(req: Request, res: Response) {
