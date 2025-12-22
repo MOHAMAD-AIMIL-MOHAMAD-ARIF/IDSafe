@@ -93,6 +93,7 @@ app.use("/recovery", recoveryRouter);
 // Vault entries router
 app.use("/vault/entries", vaultEntriesRouter);
 
+
 // ---- Routes ----
 
 // Health: checks DB connectivity through Prisma
@@ -102,65 +103,46 @@ app.get("/health", async (_req, res) => {
 });
 
 // ---- End-user WebAuthn ----
-app.post("/auth/webauthn/register/start", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.post("/auth/webauthn/register/start");
 
-app.post("/auth/webauthn/register/finish", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.post("/auth/webauthn/register/finish");
 
-app.post("/auth/webauthn/login/start", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.post("/auth/webauthn/login/start");
 
-app.post("/auth/webauthn/login/finish", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
-
-// ---- After recovery: WebAuthn re-registration ----
-app.post("/auth/webauthn/recovery/register/start", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
-
-app.post("/auth/webauthn/recovery/register/finish", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.post("/auth/webauthn/login/finish");
 
 // ---- WebAuthn credential management (NOT required by NFR-S8, so no limiter by default) ----
-app.get("/auth/webauthn/credentials", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.get("/auth/webauthn/credentials");
 
-app.delete("/auth/webauthn/credentials/:credentialId", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.delete("/auth/webauthn/credentials/:credentialId");
+
+// ---- Recovery ----
+app.post("/recovery/request");
+
+app.get("/recovery/verify");
+
+app.get("/recovery/params");
+
+app.post("/recovery/data");
+
+// ---- After recovery: WebAuthn re-registration ----
+app.post("/auth/webauthn/recovery/register/start");
+
+app.post("/auth/webauthn/recovery/register/finish");
 
 // ---- Device-binding (not required by NFR-S8; optionally add a limiter later if you want) ----
-app.post("/auth/device/bind", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.post("/auth/device/bind");
 
-app.get("/auth/device/list", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.get("/auth/device/list");
 
-app.delete("/auth/device/:deviceId", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.delete("/auth/device/:deviceId");
 
 // ---- Admin WebAuthn policy/visibility (not part of NFR-S8) ----
-app.get("/admin/webauthn/credentials", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.get("/admin/webauthn/credentials");
 
-app.get("/admin/webauthn/policy", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.get("/admin/webauthn/policy");
 
-app.put("/admin/webauthn/policy", (_req, res) =>
-  res.status(501).json({ error: "Not implemented" }),
-);
+app.put("/admin/webauthn/policy");
 
 // NFR-S5: Invalidate session on logout
 app.post("/api/auth/logout", (req, res) => {
