@@ -1,7 +1,7 @@
 // src/routes/auth.webauthn.routes.ts
 import { Router } from "express";
 import { recoveryLimiter, webauthnLimiter } from "../middleware/rateLimiters.js";
-import { requireAuth, requireRecoverySession } from "../middleware/auth.js";
+import { requireAuth } from "../middleware/auth.js";
 
 import {
   registerStart,
@@ -46,14 +46,14 @@ authWebauthnRouter.post("/login/finish", webauthnLimiter, loginFinish);
 authWebauthnRouter.post(
   "/recovery/register/start",
   recoveryLimiter,
-  requireRecoverySession({ ttlMs: 15 * 60 * 1000 /*, tokenType: "MAGIC_LINK"*/  }),
+  //requireRecoverySession is implemented in controller file
   recoveryRegisterStart,
 );
 
 authWebauthnRouter.post(
   "/recovery/register/finish",
   recoveryLimiter,
-  requireRecoverySession({ ttlMs: 15 * 60 * 1000 /*, tokenType: "MAGIC_LINK"*/  }),
+  //requireRecoverySession is implemented in controller file
   recoveryRegisterFinish,
 );
 

@@ -1,11 +1,9 @@
 // src/routes/recovery.routes.ts
 import { Router } from "express";
 import { recoveryLimiter } from "../middleware/rateLimiters.js";
-import { verifyRecoveryMagicLink } from "../controllers/recovery.controller.js";
+import { verifyRecoveryMagicLink, getRecoveryParams, postRecoveryData } from "../controllers/recovery.controller.js";
 import { requestRecoveryMagicLink } from "../controllers/recovery.issue.controller.js";
 import { requireRecoverySession } from "../middleware/auth.js";
-import { getRecoveryParams } from "../controllers/recovery.params.controller.js";
-import { postRecoveryData } from "../controllers/recovery.data.controller.js";
 import { requireAuth } from "../middleware/auth.js";
 
 export const recoveryRouter = Router();
@@ -26,3 +24,4 @@ recoveryRouter.get(
 
 // POST /recovery/data (requires normal login)
 recoveryRouter.post("/data", recoveryLimiter, requireAuth, postRecoveryData);
+

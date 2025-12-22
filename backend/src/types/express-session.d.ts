@@ -3,7 +3,7 @@ import "express-session";
 declare module "express-session" {
   interface SessionData {
     userId?: number;
-    role?: string;
+    role?: "END_USER" | "ADMIN";
 
     // WebAuthn registration temp state
     webauthnReg?: {
@@ -18,6 +18,16 @@ declare module "express-session" {
       challenge: string;
       userId: number;
       createdAtMs: number;
+    };
+
+    // Recovery-only session state (tightly scoped)
+    recovery?: {
+      userId: number;
+      tokenId: number;
+      verifiedAt: string; // ISO string (serializable in session store)
+      completedAt?: string;
+      deviceId?: number;
+      webauthn?: { challenge: string };
     };
   }
 }

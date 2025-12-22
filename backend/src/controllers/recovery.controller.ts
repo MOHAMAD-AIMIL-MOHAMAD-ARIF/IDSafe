@@ -1,7 +1,11 @@
 // src/controllers/recovery.controller.ts
 import type { Request, Response } from "express";
+import { z } from "zod";
 import crypto from "crypto";
 import { prisma } from "../db.js";
+import { Prisma } from "../generated/prisma/client.js";
+import { auditFromReq } from "../services/auditLogService.js";
+import { requireRecoverySession } from "../middleware/auth.js";
 
 const RECOVERY_SESSION_TTL_MS = Number(process.env.RECOVERY_SESSION_TTL_MS ?? 15 * 60 * 1000);
 
@@ -17,6 +21,16 @@ function hashToken(rawToken: string): string {
   // Pepper is optional but recommended
   const pepper = process.env.RECOVERY_TOKEN_PEPPER ?? "";
   return crypto.createHash("sha256").update(rawToken + pepper, "utf8").digest("hex");
+}
+
+export function zodIssuesToPrismaJson(issues: z.core.$ZodIssue[]): Prisma.InputJsonValue {
+  // Return an array of plain objects (JSON-safe)
+  return issues.map((i) => ({
+    code: i.code,
+    message: i.message,
+    // PropertyKey[] -> string[]
+    path: i.path.map((p) => String(p)),
+  }));
 }
 
 /**
@@ -90,3 +104,209 @@ export async function verifyRecoveryMagicLink(req: Request, res: Response) {
     // return res.json({ ok: true });
   });
 }
+
+/**
+ * GET /recovery/params
+ * Requires: requireRecoverySession
+ * Returns: { wrappedVaultKey, salt, timeCost, memoryCostKiB, parallelism }
+ */
+export const getRecoveryParams = [
+  requireRecoverySession,
+  async (req: Request, res: Response) => {
+    const recovery = req.session.recovery!;
+    const userId = recovery.userId;
+
+    const rd = await prisma.recoveryData.findUnique({
+      where: { userId },
+      select: {
+        wrappedVaultKey: true,
+        kdfSalt: true,
+        kdfAlgorithm: true,
+        kdfTimeCost: true,
+        kdfMemoryCost: true,
+        kdfParallelism: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!rd) {
+      await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "RECOVERY.PARAMS.FAIL",
+        detailsJson: { reason: "RECOVERY_DATA_NOT_FOUND" },
+      });
+      return res.status(404).json({ error: "Recovery data not found" });
+    }
+
+    // If you only support argon2id for now, you can enforce it:
+    if (rd.kdfAlgorithm !== "argon2id") {
+      await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "RECOVERY.PARAMS.FAIL",
+        detailsJson: { reason: "UNSUPPORTED_KDF", kdfAlgorithm: rd.kdfAlgorithm },
+      });
+      return res.status(400).json({ error: "Unsupported KDF algorithm" });
+    }
+
+    await auditFromReq(prisma, req, {
+      userId,
+      actorId: userId,
+      eventType: "RECOVERY.PARAMS.OK",
+      detailsJson: {
+        kdfAlgorithm: rd.kdfAlgorithm,
+        timeCost: rd.kdfTimeCost,
+        memoryCostKiB: rd.kdfMemoryCost,
+        parallelism: rd.kdfParallelism,
+      },
+    });
+
+    res.setHeader("Cache-Control", "no-store");
+    return res.json({
+      ok: true,
+      wrappedVaultKey: rd.wrappedVaultKey,
+      salt: rd.kdfSalt,
+      timeCost: rd.kdfTimeCost,
+      memoryCostKiB: rd.kdfMemoryCost,
+      parallelism: rd.kdfParallelism,
+    });
+  },
+];
+
+const postRecoveryDataSchema = z.object({
+  // client assertion: "I successfully derived KEK and decrypted the wrappedVaultKey"
+  // server cannot verify without learning secrets, so we only record + audit.
+  kdfVerified: z.boolean(),
+  kdfMs: z.number().int().nonnegative().optional(),
+
+  // New device binding artifact (no plaintext DEK)
+  devicePublicKey: z.string().min(1),
+  deviceLabel: z.string().min(1).max(64).optional(),
+  wrappedDEK: z.string().min(1),
+});
+
+/**
+ * POST /recovery/data
+ * Requires: requireRecoverySession
+ *
+ * Client submits:
+ * - kdfVerified (+ optional kdfMs)
+ * - devicePublicKey / deviceLabel / wrappedDEK (for DeviceKey table)
+ *
+ * Server does:
+ * - create DeviceKey row
+ * - update RecoveryData.updatedAt (touch)
+ * - deactivate existing WebauthnCredential rows (forces re-register after recovery)
+ * - mark req.session.recovery.completedAt
+ */
+export const postRecoveryData = [
+  requireRecoverySession,
+  async (req: Request, res: Response) => {
+    const recovery = req.session.recovery!;
+    const userId = recovery.userId;
+
+    const parsed = postRecoveryDataSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const detailsJson: Prisma.InputJsonValue = {
+        reason: "INVALID_PAYLOAD",
+        issues: zodIssuesToPrismaJson(parsed.error.issues),
+      };
+      await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "RECOVERY.DATA.FAIL",
+        detailsJson,
+      });
+      return res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { userId },
+      select: { userId: true, status: true },
+    });
+
+    if (!user || user.status !== "ACTIVE") {
+      await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "RECOVERY.DATA.FAIL",
+        detailsJson: { reason: !user ? "USER_NOT_FOUND" : "USER_NOT_ACTIVE" },
+      });
+      return res.status(403).json({ error: "Account is not active" });
+    }
+
+    const now = new Date();
+    const { kdfVerified, kdfMs, devicePublicKey, deviceLabel, wrappedDEK } = parsed.data;
+
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        // ensure RecoveryData exists (if not, fail)
+        const rd = await tx.recoveryData.findUnique({
+          where: { userId },
+          select: { recoveryId: true },
+        });
+        if (!rd) throw new Error("RECOVERY_DATA_NOT_FOUND");
+
+        // bind new device (stores wrappedDEK only; no plaintext DEK)
+        const device = await tx.deviceKey.create({
+          data: {
+            userId,
+            devicePublicKey,
+            deviceLabel: deviceLabel ?? null,
+            wrappedDEK,
+          },
+          select: { deviceId: true },
+        });
+
+        // touch recovery data timestamp (optional, but nice for auditability)
+        await tx.recoveryData.update({
+          where: { userId },
+          data: { updatedAt: now },
+        });
+
+        // security design choice: force recovery-authenticator registration
+        // by deactivating any existing active credentials
+        const disabled = await tx.webauthnCredential.updateMany({
+          where: { userId, isActive: true },
+          data: { isActive: false },
+        });
+
+        return { deviceId: device.deviceId, disabledCreds: disabled.count };
+      });
+
+      // mark recovery step completed for subsequent recovery WebAuthn registration
+      req.session.recovery = {
+        ...recovery,
+        completedAt: now.toISOString(),
+        deviceId: result.deviceId,
+      };
+
+      await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "RECOVERY.DATA.OK",
+        detailsJson: {
+          kdfVerified,
+          kdfMs: kdfMs ?? null,
+          deviceId: result.deviceId,
+          deviceLabel: deviceLabel ?? null,
+          disabledCreds: result.disabledCreds,
+          note: "No passphrase/KEK/DEK/plaintext stored",
+        },
+      });
+
+      res.setHeader("Cache-Control", "no-store");
+      return res.json({ ok: true, deviceId: result.deviceId });
+    } catch (e) {
+      await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "RECOVERY.DATA.FAIL",
+        detailsJson: { reason: "TX_FAILED" },
+      });
+      return res.status(500).json({ error: "Failed to complete recovery" });
+    }
+  },
+];
+
