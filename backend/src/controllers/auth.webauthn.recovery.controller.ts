@@ -11,9 +11,9 @@ import { generateRegistrationOptions, verifyRegistrationResponse } from "@simple
 type RegistrationResponseJSON = any;
 
 function getWebAuthnEnv() {
-  const rpID = process.env.WEBAUTHN_RPID ?? "localhost";
-  const expectedOrigin = process.env.WEBAUTHN_ORIGIN ?? "http://localhost:3000";
-  const rpName = process.env.WEBAUTHN_RPNAME ?? "IDSafe";
+  const rpID = process.env.WEBAUTHN_RP_ID ?? "localhost";
+  const expectedOrigin = process.env.WEBAUTHN_EXPECTED_ORIGIN ?? "http://localhost:3000";
+  const rpName = process.env.WEBAUTHN_RP_NAME ?? "IDSafe";
   return { rpID, expectedOrigin, rpName };
 }
 
