@@ -15,8 +15,11 @@ import { authDeviceRouter } from "./routes/auth.device.routes.js";
 import { adminAuthWebauthnRouter } from "./routes/admin.auth.webauthn.routes.js";
 import { adminWebauthnRouter } from "./routes/admin.webauthn.routes.js";
 import { adminUsersRouter } from "./routes/admin.users.routes.js";
+import { adminAuditRouter } from "./routes/admin.audit.routes.js";
+import { adminSystemRouter } from "./routes/admin.system.routes.js";
 import { recoveryRouter } from "./routes/recovery.routes.js";
 import { vaultEntriesRouter } from "./routes/vault.entries.routes.js";
+import { recordResponse } from "./services/metricsService.js";
 
 export const app = express();
 
@@ -79,6 +82,12 @@ app.use(
   }),
 );
 
+// In-memory request metrics
+app.use((req, res, next) => {
+  res.on("finish", () => recordResponse(res.statusCode));
+  next();
+});
+
 //---- Mounted routers ----
 
 // End-user WebAuthn + recovery WebAuthn re-registration + credential management
@@ -95,6 +104,12 @@ app.use("/admin/webauthn", adminWebauthnRouter);
 
 // Admin user management
 app.use("/admin/users", adminUsersRouter);
+
+// Admin audit log search/export
+app.use("/admin/audit-logs", adminAuditRouter);
+
+// Admin system config + health
+app.use("/admin/system", adminSystemRouter);
 
 // Recovery route (magic link, etc.)
 app.use("/recovery", recoveryRouter);
