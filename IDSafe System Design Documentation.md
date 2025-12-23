@@ -932,6 +932,7 @@ By making each guess slow and memory-expensive, Argon2id raises the cost for an 
 - The client uses the KEK with AES-256-GCM to encrypt the Vault Key, producing wrappedVaultKey.
 - The server stores only wrappedVaultKey, the salt and Argon2id parameters, plus the WebAuthn metadata.
   - The recovery passphrase, KEK and plaintext Vault Key never leave the device.
+- The device is bind and a row is inserted into DeviceKey.
 
 **b) Normal Login (Day-to-Day Use)**
 
@@ -994,7 +995,7 @@ So user must:
 
 **What Happens During Login:**
 
-**Before** vault decryption happens, these must be true:
+Before vault decryption happens, these must be true:
 
 1\. User passes WebAuthn login
 
