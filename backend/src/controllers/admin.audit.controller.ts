@@ -31,13 +31,20 @@ function parseDate(value?: string): Date | null {
 
 function buildEventTypeFilter(eventTypeRaw?: string): Prisma.StringFilter | undefined {
   if (!eventTypeRaw) return undefined;
+
   const eventTypes = eventTypeRaw
     .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
+    .map((v) => v.trim())
+    .filter((v): v is string => v.length > 0);
 
   if (eventTypes.length === 0) return undefined;
-  if (eventTypes.length === 1) return { equals: eventTypes[0] };
+
+  if (eventTypes.length === 1) {
+    const only = eventTypes[0];
+    if (only === undefined) return undefined; // satisfies noUncheckedIndexedAccess
+    return { equals: only };
+  }
+
   return { in: eventTypes };
 }
 
