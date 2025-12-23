@@ -5,7 +5,7 @@ import { pool, prisma } from "../db.js";
 
 const userStatusSchema = z.enum(["ACTIVE", "LOCKED", "DEACTIVATED"]);
 
-function parseUserId(raw: string) {
+function parseUserId(raw: string | undefined) {
   const userId = Number(raw);
   if (!Number.isInteger(userId) || userId <= 0) {
     return null;
