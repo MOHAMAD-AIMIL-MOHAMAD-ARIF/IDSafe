@@ -20,6 +20,21 @@ declare module "express-session" {
       createdAtMs: number;
     };
 
+    // Admin WebAuthn registration temp state
+    adminWebauthnReg?: {
+      userId: number;
+      email: string;
+      challenge: string;
+      createdAt: string;
+    };
+
+    // Admin WebAuthn login
+    adminWebauthnLogin?: {
+      challenge: string;
+      userId: number;
+      createdAtMs: number;
+    };
+
     // Recovery-only session state (tightly scoped)
     recovery?: {
       userId: number;
