@@ -14,6 +14,7 @@ import { authWebauthnRouter } from "./routes/auth.webauthn.routes.js";
 import { authDeviceRouter } from "./routes/auth.device.routes.js";
 import { adminAuthWebauthnRouter } from "./routes/admin.auth.webauthn.routes.js";
 import { adminWebauthnRouter } from "./routes/admin.webauthn.routes.js";
+import { adminUsersRouter } from "./routes/admin.users.routes.js";
 import { recoveryRouter } from "./routes/recovery.routes.js";
 import { vaultEntriesRouter } from "./routes/vault.entries.routes.js";
 
@@ -91,6 +92,9 @@ app.use("/auth/device", authDeviceRouter);
 
 // Admin WebAuthn config/visibility
 app.use("/admin/webauthn", adminWebauthnRouter);
+
+// Admin user management
+app.use("/admin/users", adminUsersRouter);
 
 // Recovery route (magic link, etc.)
 app.use("/recovery", recoveryRouter);
