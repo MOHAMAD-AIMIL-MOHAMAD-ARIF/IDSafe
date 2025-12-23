@@ -112,7 +112,7 @@ export async function registerStart(req: Request, res: Response) {
       status: "ACTIVE",
     },
     update: {},
-    select: { userId: true, email: true, status: true },
+    select: { userId: true, email: true, status: true, role: true },
   });
 
   if (user.role !== "END_USER") {
