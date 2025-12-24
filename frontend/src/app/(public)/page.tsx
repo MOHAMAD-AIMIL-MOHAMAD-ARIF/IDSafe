@@ -34,18 +34,17 @@ export default function LandingPage() {
           <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div className="flex flex-col gap-6">
               <span className="w-fit rounded-full bg-brand/10 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-brand">
-                Frontend scaffold ready
+                Passkey-first onboarding
               </span>
               <h1 className="text-4xl font-semibold leading-tight sm:text-5xl">
-                IDSafe delivers zero-knowledge password security built on WebAuthn.
+                IDSafe keeps your vault locked behind passkeys and client-side encryption.
               </h1>
               <p className="text-lg leading-7 text-slate-600">
-                This Next.js + TypeScript frontend is wired for the IDSafe system architecture. It
-                introduces route scaffolding, shared UI primitives, hooks, and API clients aligned to
-                the functional requirements in the system design document.
+                Create your account with a passkey, set a recovery passphrase, and let IDSafe set up
+                your encrypted vault automatically.
               </p>
               <div className="flex flex-wrap items-center gap-4">
-                <ButtonLink href="/register">Create account</ButtonLink>
+                <ButtonLink href="/register">Create account (Passkey)</ButtonLink>
                 <ButtonLink href="/login" variant="secondary">
                   Sign in
                 </ButtonLink>
@@ -57,19 +56,19 @@ export default function LandingPage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     Status
                   </p>
-                  <p className="text-2xl font-semibold text-slate-900">Frontend online</p>
+                  <p className="text-2xl font-semibold text-slate-900">Ready to onboard</p>
                   <p className="text-sm text-slate-500">
-                    Routes, shared components, hooks, and API clients are ready for implementation.
+                    Register a passkey and keep your recovery phrase safe to unlock cross-device access.
                   </p>
                 </div>
                 <div className="grid gap-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
                   <div className="flex items-center justify-between">
                     <span>WebAuthn-ready auth flow</span>
-                    <span className="font-semibold text-slate-800">Planned</span>
+                    <span className="font-semibold text-emerald-600">Active</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Vault encryption pipeline</span>
-                    <span className="font-semibold text-slate-800">Planned</span>
+                    <span className="font-semibold text-emerald-600">Active</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Recovery & admin views</span>

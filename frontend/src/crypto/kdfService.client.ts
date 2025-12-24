@@ -25,7 +25,8 @@ export async function deriveKek256(passphrase: string, params: Argon2idParams): 
   const hashLen = params.hashLenBytes ?? 32;
 
   // dynamic import keeps it client-only in Next.js
-  const argon2 = await import("argon2-browser");
+  const argon2Module = await import("argon2-browser/dist/argon2-bundled.min.js");
+  const argon2 = "default" in argon2Module ? argon2Module.default : argon2Module;
 
   // argon2-browser uses mem in KiB, time iterations, parallelism lanes
   const result = await argon2.hash({

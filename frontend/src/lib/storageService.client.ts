@@ -6,7 +6,7 @@ const KEY_STORE = "keys";
 const VAULT_METADATA_STORE = "vaultMetadata";
 
 type KeyRecord = {
-  id: "dek";
+  id: "dek" | "devicePrivateKey";
   value: string;
   createdAt: string;
 };
@@ -84,6 +84,28 @@ export async function loadDekBytes(): Promise<Uint8Array | null> {
 export async function clearDek(): Promise<void> {
   const db = await getDb();
   await db.delete(KEY_STORE, "dek");
+}
+
+export async function storeDevicePrivateKeyJwk(jwk: JsonWebKey): Promise<void> {
+  const db = await getDb();
+  const record: KeyRecord = {
+    id: "devicePrivateKey",
+    value: JSON.stringify(jwk),
+    createdAt: new Date().toISOString(),
+  };
+  await db.put(KEY_STORE, record);
+}
+
+export async function loadDevicePrivateKeyJwk(): Promise<JsonWebKey | null> {
+  const db = await getDb();
+  const record = await db.get(KEY_STORE, "devicePrivateKey");
+  if (!record) return null;
+  return JSON.parse(record.value) as JsonWebKey;
+}
+
+export async function clearDevicePrivateKey(): Promise<void> {
+  const db = await getDb();
+  await db.delete(KEY_STORE, "devicePrivateKey");
 }
 
 export async function upsertEncryptedVaultMetadata(

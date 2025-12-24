@@ -32,6 +32,39 @@ async function importAesGcmKeyRaw(keyBytes: Uint8Array): Promise<CryptoKey> {
   return crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
 }
 
+export async function wrapVaultKeyWithKek(args: {
+  kekBytes: Uint8Array;
+  vaultKeyBytes: Uint8Array;
+}): Promise<{ wrappedVaultKey: string }> {
+  const { kekBytes, vaultKeyBytes } = args;
+
+  // 1) AES-GCM encrypt vaultKeyBytes using KEK
+  const kekKey = await importAesGcmKeyRaw(kekBytes);
+
+  // 12-byte IV is standard for AES-GCM
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+
+  const ctBuf = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    kekKey,
+    new Uint8Array(vaultKeyBytes).buffer, // ArrayBuffer
+  );
+
+  const ct = new Uint8Array(ctBuf); // ciphertext+tag
+
+  // 2) Canonical envelope
+  const envelope: WrappedKeyEnvelopeV1 = {
+    v: 1,
+    alg: "A256GCM",
+    ivB64: bytesToB64Url(iv),
+    ctB64: bytesToB64Url(ct),
+  };
+
+  return {
+    wrappedVaultKey: JSON.stringify(envelope),
+  };
+}
+
 /**
  * Wrap (encrypt) a raw vault key using a KEK derived from recovery passphrase.
  *
@@ -56,30 +89,5 @@ export async function wrapVaultKeyWithPassphrase(args: {
     hashLenBytes: 32,
   });
 
-  // 2) AES-GCM encrypt vaultKeyBytes using KEK
-  const kekKey = await importAesGcmKeyRaw(kekBytes);
-
-  // 12-byte IV is standard for AES-GCM
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-
-  const ctBuf = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    kekKey,
-    new Uint8Array(vaultKeyBytes).buffer, // ArrayBuffer
-  );
-
-  const ct = new Uint8Array(ctBuf); // ciphertext+tag
-
-  // 3) Canonical envelope
-  const envelope: WrappedKeyEnvelopeV1 = {
-    v: 1,
-    alg: "A256GCM",
-    ivB64: bytesToB64Url(iv),
-    ctB64: bytesToB64Url(ct),
-  };
-
-  return {
-    wrappedVaultKey: JSON.stringify(envelope),
-    /*kekBytes,*/ // return only if you need it immediately; otherwise you can omit
-  };
+  return wrapVaultKeyWithKek({ kekBytes, vaultKeyBytes });
 }
