@@ -20,6 +20,7 @@ import { adminSystemRouter } from "./routes/admin.system.routes.js";
 import { recoveryRouter } from "./routes/recovery.routes.js";
 import { vaultEntriesRouter } from "./routes/vault.entries.routes.js";
 import { recordResponse } from "./services/metricsService.js";
+import { requireAuth } from "./middleware/auth.js";
 
 export const app = express();
 
@@ -116,6 +117,15 @@ app.use("/recovery", recoveryRouter);
 
 // Vault entries router
 app.use("/vault/entries", vaultEntriesRouter);
+
+// Session introspection for frontend auth state (cookie-based)
+app.get("/auth/session", requireAuth, (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    userId: req.session.userId,
+    role: req.session.role ?? "END_USER",
+  });
+});
 
 
 // Health: checks DB connectivity through Prisma
