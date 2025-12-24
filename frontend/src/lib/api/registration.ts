@@ -1,12 +1,8 @@
-import type {
-  PublicKeyCredentialCreationOptionsJSON,
-  RegistrationResponseJSON,
-} from "@simplewebauthn/types";
 import { apiClient } from "./index";
 
 export type RegisterStartResponse = {
   ok: true;
-  options: PublicKeyCredentialCreationOptionsJSON;
+  options: unknown;
 };
 
 export type RegisterFinishResponse = {
@@ -46,9 +42,7 @@ export async function startPasskeyRegistration(email: string): Promise<RegisterS
   return apiClient.post<RegisterStartResponse>("/auth/webauthn/register/start", { email });
 }
 
-export async function finishPasskeyRegistration(
-  credential: RegistrationResponseJSON,
-): Promise<RegisterFinishResponse> {
+export async function finishPasskeyRegistration(credential: unknown): Promise<RegisterFinishResponse> {
   return apiClient.post<RegisterFinishResponse>("/auth/webauthn/register/finish", { credential });
 }
 

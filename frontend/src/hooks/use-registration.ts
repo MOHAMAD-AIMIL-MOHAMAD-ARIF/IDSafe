@@ -180,7 +180,7 @@ export function useRegistrationFlow() {
 
       try {
         const { options } = await startPasskeyRegistration(email);
-        const credential = await startRegistration(options);
+        const credential = await startRegistration(options as Parameters<typeof startRegistration>[0]);
         await finishPasskeyRegistration(credential);
 
         setPasskeyRegistered(true);
