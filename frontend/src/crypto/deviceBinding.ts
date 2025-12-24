@@ -8,10 +8,22 @@ function bytesToB64(bytes: Uint8Array): string {
 
 function b64ToBytes(b64: string): Uint8Array {
   const bin = atob(b64);
-  const out = new Uint8Array(bin.length);
+
+  // Force an actual ArrayBuffer (not ArrayBufferLike)
+  const buf = new ArrayBuffer(bin.length);
+  const out = new Uint8Array(buf);
+
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
 }
+
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  // Copy into a guaranteed ArrayBuffer
+  const out = new Uint8Array(bytes.byteLength);
+  out.set(bytes);
+  return out.buffer;
+}
+
 
 export async function generateDeviceKeyPair(): Promise<CryptoKeyPair> {
   return crypto.subtle.generateKey(
@@ -39,11 +51,13 @@ export async function wrapDekForDevice(args: {
   devicePublicKey: CryptoKey;
 }): Promise<string> {
   const { dekBytes, devicePublicKey } = args;
+
   const wrapped = await crypto.subtle.encrypt(
     { name: "RSA-OAEP" },
     devicePublicKey,
-    new Uint8Array(dekBytes).buffer,
+    toArrayBuffer(dekBytes), // guaranteed ArrayBuffer
   );
+
   return bytesToB64(new Uint8Array(wrapped));
 }
 
@@ -65,10 +79,15 @@ export async function unwrapDekForDevice(args: {
   devicePrivateKey: CryptoKey;
 }): Promise<Uint8Array> {
   const wrappedBytes = b64ToBytes(args.wrappedDek);
+
   const decrypted = await crypto.subtle.decrypt(
     { name: "RSA-OAEP" },
     args.devicePrivateKey,
-    wrappedBytes,
+    toArrayBuffer(wrappedBytes), // ✅ guaranteed ArrayBuffer
   );
+
   return new Uint8Array(decrypted);
 }
+
+
+
