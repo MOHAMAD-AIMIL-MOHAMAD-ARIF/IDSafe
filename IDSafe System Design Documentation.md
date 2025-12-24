@@ -123,7 +123,7 @@ Tables 4.6 and 4.7 shows the software and hardware requirements respectively for
 |     |     |     |
 | Backend language | TypeScript on Node.js 20+ | Indicates the language used for implementing backend services and APIs. |
 | IDE/Editor | Visual Studio Code (with TypeScript, ESLint, Prettier extensions) | Refers to the main development tools used to write and manage source code. |
-| Frontend framework and/or library | React 18 with Next.js 14 | Specifies the framework/library used to build the user interface. |
+| Frontend framework and/or library | React 18 with Next.js 16 | Specifies the framework/library used to build the user interface. |
 | Backend framework and/or library | Express on Node.js with @simplewebauthn/server, Prisma 7 ORM | Defines the server-side frameworks and libraries used to structure the backend, handle routing, verify WebAuthn ceremonies, and interact with the PostgreSQL database. |
 | Browsers supported | Latest versions of Google Chrome, Mozilla Firefox, Microsoft Edge, and Apple Safari on desktop and mobile | Describes the web browsers in which the system is expected to run correctly. |
 
