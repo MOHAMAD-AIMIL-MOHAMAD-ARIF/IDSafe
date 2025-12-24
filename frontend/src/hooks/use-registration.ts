@@ -10,7 +10,7 @@ import {
   startPasskeyRegistration,
   uploadRecoveryData,
 } from "@/lib/api/registration";
-import { storeDekBytes, storeDevicePrivateKeyJwk } from "@/lib/storageService.client";
+import { storeDevicePrivateKeyJwk, storeWrappedDek } from "@/lib/storageService.client";
 import {
   exportPrivateKeyJwk,
   exportPublicKeyJwk,
@@ -23,7 +23,6 @@ export type RegistrationStepStatus = "pending" | "in_progress" | "completed" | "
 export type RegistrationStep = {
   id:
     | "generateDek"
-    | "storeDek"
     | "deriveKek"
     | "wrapDek"
     | "deviceBind";
@@ -41,7 +40,6 @@ const DEFAULT_KDF_PARAMS = {
 function createDefaultSteps(): RegistrationStep[] {
   return [
     { id: "generateDek", label: "Generate Vault Key (DEK, 256-bit)", status: "pending" },
-    { id: "storeDek", label: "Store DEK locally (IndexedDB)", status: "pending" },
     {
       id: "deriveKek",
       label: "Derive KEK from recovery passphrase (Argon2id + salt + params)",
@@ -55,7 +53,7 @@ function createDefaultSteps(): RegistrationStep[] {
     },
     {
       id: "deviceBind",
-      label: "Bind this device (generate device keypair, wrap DEK, upload device key)",
+      label: "Bind this device (wrap DEK + store device key locally)",
       status: "pending",
     },
   ];
@@ -110,10 +108,6 @@ export function useRegistrationFlow() {
         const dekBytes = crypto.getRandomValues(new Uint8Array(32));
         updateStepStatus("generateDek", "completed");
 
-        updateStepStatus("storeDek", "in_progress");
-        await storeDekBytes(dekBytes);
-        updateStepStatus("storeDek", "completed");
-
         const salt = generateSaltB64();
         updateStepStatus("deriveKek", "in_progress");
         const kekBytes = await deriveKek256(passphrase, {
@@ -155,6 +149,7 @@ export function useRegistrationFlow() {
         });
 
         await storeDevicePrivateKeyJwk(devicePrivateKey);
+        await storeWrappedDek(wrappedDEK);
         updateStepStatus("deviceBind", "completed");
 
         setPhase("complete");

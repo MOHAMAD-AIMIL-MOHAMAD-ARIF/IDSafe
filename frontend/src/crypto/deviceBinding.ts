@@ -6,6 +6,13 @@ function bytesToB64(bytes: Uint8Array): string {
   return btoa(bin);
 }
 
+function b64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 export async function generateDeviceKeyPair(): Promise<CryptoKeyPair> {
   return crypto.subtle.generateKey(
     {
@@ -38,4 +45,30 @@ export async function wrapDekForDevice(args: {
     new Uint8Array(dekBytes).buffer,
   );
   return bytesToB64(new Uint8Array(wrapped));
+}
+
+export async function importDevicePrivateKey(jwk: JsonWebKey): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    "jwk",
+    jwk,
+    {
+      name: "RSA-OAEP",
+      hash: "SHA-256",
+    },
+    false,
+    ["decrypt"],
+  );
+}
+
+export async function unwrapDekForDevice(args: {
+  wrappedDek: string;
+  devicePrivateKey: CryptoKey;
+}): Promise<Uint8Array> {
+  const wrappedBytes = b64ToBytes(args.wrappedDek);
+  const decrypted = await crypto.subtle.decrypt(
+    { name: "RSA-OAEP" },
+    args.devicePrivateKey,
+    wrappedBytes,
+  );
+  return new Uint8Array(decrypted);
 }

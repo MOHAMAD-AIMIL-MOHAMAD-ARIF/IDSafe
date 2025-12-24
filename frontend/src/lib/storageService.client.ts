@@ -6,7 +6,7 @@ const KEY_STORE = "keys";
 const VAULT_METADATA_STORE = "vaultMetadata";
 
 type KeyRecord = {
-  id: "dek" | "devicePrivateKey";
+  id: "dek" | "devicePrivateKey" | "wrappedDek";
   value: string;
   createdAt: string;
 };
@@ -84,6 +84,28 @@ export async function loadDekBytes(): Promise<Uint8Array | null> {
 export async function clearDek(): Promise<void> {
   const db = await getDb();
   await db.delete(KEY_STORE, "dek");
+}
+
+export async function storeWrappedDek(wrappedDek: string): Promise<void> {
+  const db = await getDb();
+  const record: KeyRecord = {
+    id: "wrappedDek",
+    value: wrappedDek,
+    createdAt: new Date().toISOString(),
+  };
+  await db.put(KEY_STORE, record);
+}
+
+export async function loadWrappedDek(): Promise<string | null> {
+  const db = await getDb();
+  const record = await db.get(KEY_STORE, "wrappedDek");
+  if (!record) return null;
+  return record.value;
+}
+
+export async function clearWrappedDek(): Promise<void> {
+  const db = await getDb();
+  await db.delete(KEY_STORE, "wrappedDek");
 }
 
 export async function storeDevicePrivateKeyJwk(jwk: JsonWebKey): Promise<void> {
