@@ -114,8 +114,11 @@ export class ApiClient {
     return this.request<T>("PUT", path, body, options);
   }
 
-  async delete(path: string, options?: ApiRequestOptions): Promise<void> {
-    // Many DELETE endpoints return 204 No Content, so we don't require JSON.
-    await this.request<undefined>("DELETE", path, undefined, options);
+  
+  // If an endpoint returns 204, your parseJson already returns undefined as T, so T=void works fine.
+  // If an endpoint returns JSON like { ok: true; credentialId: number }, you can type it with <T>.
+  async delete<T = void>(path: string, options?: ApiRequestOptions): Promise<T> {
+  // Some DELETE endpoints return JSON; others return 204 No Content.
+  return this.request<T>("DELETE", path, undefined, options);
   }
 }

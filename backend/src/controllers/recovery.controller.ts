@@ -267,10 +267,10 @@ export const postRecoveryData = [
 
         // security design choice: force recovery-authenticator registration
         // by deactivating any existing active credentials
-        const disabled = await tx.webauthnCredential.updateMany({
+        /*const disabled = await tx.webauthnCredential.updateMany({
           where: { userId, isActive: true },
           data: { isActive: false },
-        });
+        });*/
 
         return { deviceId: device.deviceId, disabledCreds: disabled.count };
       });
