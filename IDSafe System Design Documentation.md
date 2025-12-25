@@ -871,19 +871,7 @@ Table 4.12 to 4.18 show the data dictionary for each of the database tables in t
 | created_at | TIMESTAMPTZ | NOT NULL, default NOW() | Timestamp indicating when the device-binding was created. |
 | last_used_at | TIMESTAMPTZ | NULL | Timestamp indicating when this device last accessed the vault successfully. Useful for session auditing and device management. |
 
-**Concept: Passphrase only for recovery**
-
-- **Normal access to the vault**
-  - User authenticates with **WebAuthn** (biometric / device unlock).
-  - The **vault key (DEK)** is stored locally on the device in some secure storage (e.g., IndexedDB + OS/device protection).
-  - After WebAuthn login, the app reads the local vault key and decrypts the vault.
-  - **No passphrase is asked.**
-- **Account recovery**
-  - If the user loses the device (and the local vault key), the **only way** to get the vault key back is via a **backup copy** that was encrypted with a **recovery passphrase**.
-  - The recovery passphrase is run through **Argon2id** to derive a strong key (KEK), which decrypts the backup of the vault key.
-  - This is the _only time_ the passphrase and Argon2id are used.
-
-So **Argon2id and the passphrase are not part of daily login**; they are just the "break glass in emergency" mechanism to recover the vault key on a new device.
+**Argon2id and the passphrase are not part of daily login**; they are just the "break glass in emergency" mechanism to recover the vault key on a new device.
 
 **Key Management Design**
 
@@ -900,7 +888,6 @@ The following keys and secrets are used:
 - **Vault Key / Data Encryption Key (DEK)**
   - A random 256-bit symmetric key generated once per user.
   - Used with AES-256-GCM to encrypt and decrypt all vault entries.
-  - Stored locally on the user's device in secure storage; never stored in plaintext on the server.
 - **Recovery Passphrase (user-chosen)**
   - Only used in **recovery scenarios**, not during normal logins.
   - Known by the user and entered when they need to recover their vault on a new device.
@@ -925,21 +912,24 @@ By making each guess slow and memory-expensive, Argon2id raises the cost for an 
 
 - The user registers using **WebAuthn**, so the server stores the WebAuthn public key and credential ID.
 - The client generates a random 256-bit **Vault Key (DEK)**.
-- The Vault Key is stored locally on the device in secure storage, accessible after WebAuthn/biometric unlock.
 - The user is asked to define a **recovery passphrase**.
 - The client generates a random salt and runs Argon2id to derive the **KEK**:
   - KEK = Argon2id(passphrase, salt, params)
 - The client uses the KEK with AES-256-GCM to encrypt the Vault Key, producing wrappedVaultKey.
 - The server stores only wrappedVaultKey, the salt and Argon2id parameters, plus the WebAuthn metadata.
   - The recovery passphrase, KEK and plaintext Vault Key never leave the device.
-- The device is bind and a row is inserted into DeviceKey.
+- The device is bind:
+  - The client generates a device keypair (devicePublicKey, devicePrivateKey).
+  - The Vault Key is wrapped using the devicePublicKey producing wrappedDEK.
+  - The wrappedDEK and corresponding devicePublicKey is stored in the server (DeviceKey).
 
 **b) Normal Login (Day-to-Day Use)**
 
 - The user visits the application and performs **WebAuthn authentication** (e.g., biometric on their device).
-- After successful WebAuthn verification, the client loads the locally stored **Vault Key** from secure storage.
-- Using the Vault Key, the client decrypts the AES-GCM encrypted vault entries.
-- The user can view and manage passwords.
+- After successful WebAuthn verification, the client loads the corresponding server-stored wrappedDEK for the device.
+- Client uses the IndexedDB-stored device privateKey (generated during device-binding in registration) to decrypt the wrappedDEK.
+- Using the DEK, the client decrypts the AES-GCM encrypted vault entries.
+- The user can view and manage vault entries.
 
 Importantly, **no recovery passphrase is requested** in this flow; the experience is as simple as "open the site → biometric → vault opens".
 
@@ -952,7 +942,10 @@ If the user loses their original device or WebAuthn credential:
 - The user enters their **recovery passphrase**.
 - The client runs KEK = Argon2id(passphrase, salt, params) to derive the KEK.
 - The client decrypts wrappedVaultKey with the KEK to obtain the plaintext **Vault Key**.
-- The Vault Key is stored in secure storage on the **new** device, and the user registers a **new WebAuthn credential** on this device.
+- The client generates a new device keypair (publicKey, privateKey).
+- The Vault Key is re-wrapped using the new devicePublicKey.
+- The new wrappedDEK and corresponding devicePublicKey is stored in the server (DeviceKey).
+- The user registers a **new WebAuthn credential** on this device.
 - From this point on, the user again logs in normally with WebAuthn/biometrics only.
 
 **Security Properties**
@@ -982,7 +975,7 @@ This means:**
 Because:
 
 - The new device has no device keypair
-- Wrapped DEK cannot be decrypted
+- WrappedDEK cannot be decrypted
 
 So user must:
 
@@ -1012,14 +1005,14 @@ Before vault decryption happens, these must be true:
 
 - Generate deviceKeyPair: { publicKey, privateKey }
 - Store privateKey in IndexedDB
-- Send publicKey to backend during device-binding
-- Backend stores device record, binds wrapped DEK to this key
+- Send publicKey and wrappedDEK to backend during device-binding
+- Backend stores device record (DeviceKey), binds wrappedDEK to this key
 
 **On login:**
 
 - WebAuthn assertion verifies identity
-- Client loads the locally stored Vault Key from secure storage for the device
-- Client decrypts it using devicePrivateKey
+- Client loads the server-stored wrappedDEK for the device
+- Client decrypts it using the IndexedDB-stored devicePrivateKey
 - DEK is now unlocked → decrypt vault entries
 
 **Effect on Recovery:**
