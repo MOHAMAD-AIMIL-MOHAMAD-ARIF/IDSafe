@@ -6,6 +6,7 @@ import {
   bindDevice,
   listDevices,
   deleteDevice,
+  getDeviceWrappedDek,
 } from "../controllers/auth.device.controller.js";
 
 export const authDeviceRouter = Router();
@@ -22,4 +23,5 @@ authDeviceRouter.use(requireAuth);
 
 authDeviceRouter.post("/bind", bindDevice);
 authDeviceRouter.get("/list", listDevices);
+authDeviceRouter.get("/:deviceId/wrapped-dek", getDeviceWrappedDek);
 authDeviceRouter.delete("/:deviceId", deleteDevice);

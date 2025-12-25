@@ -6,7 +6,7 @@ const KEY_STORE = "keys";
 const VAULT_METADATA_STORE = "vaultMetadata";
 
 type KeyRecord = {
-  id: "dek" | "devicePrivateKey" | "wrappedDek";
+  id: "dek" | "devicePrivateKey" | "deviceId";
   value: string;
   createdAt: string;
 };
@@ -86,28 +86,6 @@ export async function clearDek(): Promise<void> {
   await db.delete(KEY_STORE, "dek");
 }
 
-export async function storeWrappedDek(wrappedDek: string): Promise<void> {
-  const db = await getDb();
-  const record: KeyRecord = {
-    id: "wrappedDek",
-    value: wrappedDek,
-    createdAt: new Date().toISOString(),
-  };
-  await db.put(KEY_STORE, record);
-}
-
-export async function loadWrappedDek(): Promise<string | null> {
-  const db = await getDb();
-  const record = await db.get(KEY_STORE, "wrappedDek");
-  if (!record) return null;
-  return record.value;
-}
-
-export async function clearWrappedDek(): Promise<void> {
-  const db = await getDb();
-  await db.delete(KEY_STORE, "wrappedDek");
-}
-
 export async function storeDevicePrivateKeyJwk(jwk: JsonWebKey): Promise<void> {
   const db = await getDb();
   const record: KeyRecord = {
@@ -128,6 +106,29 @@ export async function loadDevicePrivateKeyJwk(): Promise<JsonWebKey | null> {
 export async function clearDevicePrivateKey(): Promise<void> {
   const db = await getDb();
   await db.delete(KEY_STORE, "devicePrivateKey");
+}
+
+export async function storeDeviceId(deviceId: number): Promise<void> {
+  const db = await getDb();
+  const record: KeyRecord = {
+    id: "deviceId",
+    value: String(deviceId),
+    createdAt: new Date().toISOString(),
+  };
+  await db.put(KEY_STORE, record);
+}
+
+export async function loadDeviceId(): Promise<number | null> {
+  const db = await getDb();
+  const record = await db.get(KEY_STORE, "deviceId");
+  if (!record) return null;
+  const parsed = Number(record.value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export async function clearDeviceId(): Promise<void> {
+  const db = await getDb();
+  await db.delete(KEY_STORE, "deviceId");
 }
 
 export async function upsertEncryptedVaultMetadata(

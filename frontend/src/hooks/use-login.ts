@@ -5,7 +5,8 @@ import { startAuthentication } from "@simplewebauthn/browser";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { finishWebauthnLogin, startWebauthnLogin } from "@/lib/api/auth";
-import { loadDevicePrivateKeyJwk, loadWrappedDek } from "@/lib/storageService.client";
+import { fetchDeviceWrappedDek } from "@/lib/api/device";
+import { loadDeviceId, loadDevicePrivateKeyJwk } from "@/lib/storageService.client";
 import { importDevicePrivateKey, unwrapDekForDevice } from "@/crypto/deviceBinding";
 import { routes } from "@/lib/config/routes";
 
@@ -21,12 +22,24 @@ function isPasskeyCancelError(error: unknown): boolean {
 type UnlockResult = { ok: true } | { ok: false; reason: string };
 
 async function unlockVaultOnDevice(): Promise<UnlockResult> {
-  const wrappedDek = await loadWrappedDek();
-  if (!wrappedDek) {
+  const deviceId = await loadDeviceId();
+  if (!deviceId) {
     return {
       ok: false,
       reason:
         "This device does not have a bound vault key. Use account recovery to re-bind this device.",
+    };
+  }
+
+  let wrappedDek: string;
+  try {
+    const response = await fetchDeviceWrappedDek(deviceId);
+    wrappedDek = response.wrappedDEK;
+  } catch {
+    return {
+      ok: false,
+      reason:
+        "We could not retrieve the device-bound vault key. Start recovery to re-bind this device.",
     };
   }
 

@@ -84,3 +84,34 @@ export async function deleteDevice(req: Request, res: Response) {
 
   return res.json({ ok: true, deviceId });
 }
+
+/**
+ * GET /auth/device/:deviceId/wrapped-dek (requires requireAuth)
+ */
+export async function getDeviceWrappedDek(req: Request, res: Response) {
+  const userId = req.session.userId!;
+  const deviceId = Number(req.params.deviceId);
+
+  if (!Number.isInteger(deviceId) || deviceId <= 0) {
+    return res.status(400).json({ error: "Invalid deviceId" });
+  }
+
+  const device = await prisma.deviceKey.findFirst({
+    where: { deviceId, userId },
+    select: {
+      wrappedDEK: true,
+    },
+  });
+
+  if (!device) {
+    return res.status(404).json({ error: "Device not found" });
+  }
+
+  await prisma.deviceKey.update({
+    where: { deviceId },
+    data: { lastUsedAt: new Date() },
+  });
+
+  res.setHeader("Cache-Control", "no-store");
+  return res.json({ ok: true, wrappedDEK: device.wrappedDEK });
+}

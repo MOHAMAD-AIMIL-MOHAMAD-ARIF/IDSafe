@@ -10,7 +10,7 @@ import {
   startPasskeyRegistration,
   uploadRecoveryData,
 } from "@/lib/api/registration";
-import { storeDevicePrivateKeyJwk, storeWrappedDek } from "@/lib/storageService.client";
+import { storeDeviceId, storeDevicePrivateKeyJwk } from "@/lib/storageService.client";
 import {
   exportPrivateKeyJwk,
   exportPublicKeyJwk,
@@ -142,14 +142,14 @@ export function useRegistrationFlow() {
           devicePublicKey: deviceKeyPair.publicKey,
         });
 
-        await bindDevice({
+        const deviceBindResponse = await bindDevice({
           devicePublicKey: JSON.stringify(devicePublicKey),
           deviceLabel: "This device",
           wrappedDEK,
         });
 
+        await storeDeviceId(deviceBindResponse.device.deviceId);
         await storeDevicePrivateKeyJwk(devicePrivateKey);
-        await storeWrappedDek(wrappedDEK);
         updateStepStatus("deviceBind", "completed");
 
         setPhase("complete");
