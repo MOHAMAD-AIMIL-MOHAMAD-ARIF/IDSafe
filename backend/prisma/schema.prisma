@@ -206,3 +206,24 @@ model DeviceKey {
 
   @@index([userId])
 }
+
+/**
+ * ========= AdminCredential =========
+ */
+model AdminCredential {
+  adminCredentialId Int @id @default(autoincrement())
+
+  userId Int @unique
+  user   User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  // Email is the username, so no "username" column needed.
+  passwordHash String
+  passwordAlgo String @default("argon2id")
+
+  // Optional lockout controls (good for security + easy to implement)
+  failedAttempts Int @default(0)
+  lockedUntil    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
