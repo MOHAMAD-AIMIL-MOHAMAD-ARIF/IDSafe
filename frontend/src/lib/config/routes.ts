@@ -4,5 +4,6 @@ export const routes = {
   register: "/register",
   recovery: "/recovery",
   vault: "/vault",
+  account: "/account",
   admin: "/admin",
 };

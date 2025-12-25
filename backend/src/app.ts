@@ -12,6 +12,7 @@ import { httpsOnly } from "./middleware/httpsOnly.js";
 
 import { authWebauthnRouter } from "./routes/auth.webauthn.routes.js";
 import { authDeviceRouter } from "./routes/auth.device.routes.js";
+import { authAccountRouter } from "./routes/auth.account.routes.js";
 import { adminAuthWebauthnRouter } from "./routes/admin.auth.webauthn.routes.js";
 import { adminWebauthnRouter } from "./routes/admin.webauthn.routes.js";
 import { adminUsersRouter } from "./routes/admin.users.routes.js";
@@ -93,6 +94,9 @@ app.use((req, res, next) => {
 
 // End-user WebAuthn + recovery WebAuthn re-registration + credential management
 app.use("/auth/webauthn", authWebauthnRouter);
+
+// End-user account profile
+app.use("/auth/account", authAccountRouter);
 
 // Admin WebAuthn auth (separate login/registration)
 app.use("/admin/auth/webauthn", adminAuthWebauthnRouter);

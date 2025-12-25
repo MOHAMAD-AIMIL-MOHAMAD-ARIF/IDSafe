@@ -4,6 +4,7 @@ const navItems = [
   { label: "Login", href: "/login" },
   { label: "Register", href: "/register" },
   { label: "Vault", href: "/vault" },
+  { label: "Account", href: "/account" },
   { label: "Admin", href: "/admin" },
 ];
 
