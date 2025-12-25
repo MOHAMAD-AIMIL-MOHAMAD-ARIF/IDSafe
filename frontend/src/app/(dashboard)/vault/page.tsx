@@ -506,6 +506,13 @@ export default function VaultPage() {
                     </label>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={generator.generate}
+                  className="rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white shadow-sm"
+                >
+                  Generate password
+                </button>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                   {generator.generatedPassword || "Generate a password to preview it here."}
                 </div>
@@ -515,13 +522,6 @@ export default function VaultPage() {
                   </p>
                 )}
                 <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={generator.generate}
-                    className="rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white shadow-sm"
-                  >
-                    Generate
-                  </button>
                   <button
                     type="button"
                     onClick={() => void handleCopy("Generated password", generator.generatedPassword)}
