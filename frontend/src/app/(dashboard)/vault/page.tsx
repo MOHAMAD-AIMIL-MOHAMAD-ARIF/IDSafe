@@ -7,6 +7,7 @@ import { usePasswordGenerator } from "@/hooks/use-password-generator";
 import { useVaultEntries } from "@/hooks/use-vault-entries";
 import { routes } from "@/lib/config/routes";
 import type { VaultEntryForm, VaultEntryView } from "@/types/vault";
+import type { PasswordGeneratorOptions } from "@/hooks/use-password-generator";
 
 const emptyEntry: VaultEntryForm = {
   title: "",
@@ -22,6 +23,20 @@ function formatDate(value?: string | null) {
   if (Number.isNaN(parsed.getTime())) return "—";
   return parsed.toLocaleString();
 }
+
+// If PasswordGeneratorOptions also has non-boolean keys (like "length"),
+// keep this list restricted to the boolean toggle keys.
+type PasswordToggleKey = Extract<
+  keyof PasswordGeneratorOptions,
+  "includeLowercase" | "includeUppercase" | "includeDigits" | "includeSymbols"
+>;
+
+const PASSWORD_TOGGLE_OPTIONS = [
+  { key: "includeLowercase", label: "Lowercase (a-z)" },
+  { key: "includeUppercase", label: "Uppercase (A-Z)" },
+  { key: "includeDigits", label: "Digits (0-9)" },
+  { key: "includeSymbols", label: "Symbols (!@#)" },
+] as const satisfies ReadonlyArray<{ key: PasswordToggleKey; label: string }>;
 
 export default function VaultPage() {
   const { status, logout } = useAuthContext();
@@ -473,22 +488,18 @@ export default function VaultPage() {
                   />
                 </div>
                 <div className="grid gap-2 text-sm text-slate-600">
-                  {[
-                    { key: "includeLowercase", label: "Lowercase (a-z)" },
-                    { key: "includeUppercase", label: "Uppercase (A-Z)" },
-                    { key: "includeDigits", label: "Digits (0-9)" },
-                    { key: "includeSymbols", label: "Symbols (!@#)" },
-                  ].map((option) => (
+                  {PASSWORD_TOGGLE_OPTIONS.map((option) => (
                     <label key={option.key} className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         checked={generator.options[option.key]}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          const key = option.key;
                           generator.setOptions((prev) => ({
                             ...prev,
-                            [option.key]: event.target.checked,
-                          }))
-                        }
+                            [key]: event.target.checked,
+                          }));
+                        }}
                         className="h-4 w-4 rounded border-slate-300"
                       />
                       {option.label}
