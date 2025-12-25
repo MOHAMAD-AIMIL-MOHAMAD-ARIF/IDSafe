@@ -940,9 +940,9 @@ Importantly, **no recovery passphrase is requested** in this flow; the experienc
 
 If the user loses their original device or WebAuthn credential:
 
-- The user accesses a **recovery page** (via an email magic link) and proves ownership of their account (by email verification).
+- The user accesses a recovery landing page (via an email magic link).
 - The client fetches the stored wrappedVaultKey, together with the salt and Argon2id parameters.
-- The user enters their **recovery passphrase**.
+- The user enters their recovery passphrase in a form.
 - The client runs KEK = Argon2id(passphrase, salt, params) to derive the KEK.
 - The client decrypts wrappedVaultKey with the KEK to obtain the plaintext **Vault Key**.
 - The client generates a new device keypair (publicKey, privateKey).
