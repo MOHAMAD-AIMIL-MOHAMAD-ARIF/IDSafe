@@ -120,7 +120,7 @@ export default function LoginPage() {
             </div>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Link
-                href={routes.recovery}
+                href={routes.recoveryRequest}
                 className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
               >
                 Start account recovery

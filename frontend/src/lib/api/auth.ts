@@ -12,6 +12,16 @@ export type LoginFinishResponse = {
   ok: true;
 };
 
+export type RecoveryRegisterStartResponse = {
+  ok: true;
+  options: unknown;
+};
+
+export type RecoveryRegisterFinishResponse = {
+  ok: true;
+  userId: number;
+};
+
 export async function fetchSession(): Promise<AuthSessionResponse> {
   return apiClient.get<AuthSessionResponse>("/auth/session", { cache: "no-store" });
 }
@@ -22,6 +32,18 @@ export async function startWebauthnLogin(email: string): Promise<LoginStartRespo
 
 export async function finishWebauthnLogin(credential: unknown): Promise<LoginFinishResponse> {
   return apiClient.post<LoginFinishResponse>("/auth/webauthn/login/finish", { credential });
+}
+
+export async function startRecoveryPasskeyRegistration(): Promise<RecoveryRegisterStartResponse> {
+  return apiClient.post<RecoveryRegisterStartResponse>("/auth/webauthn/recovery/register/start");
+}
+
+export async function finishRecoveryPasskeyRegistration(
+  credential: unknown,
+): Promise<RecoveryRegisterFinishResponse> {
+  return apiClient.post<RecoveryRegisterFinishResponse>("/auth/webauthn/recovery/register/finish", {
+    credential,
+  });
 }
 
 export async function logout(): Promise<{ ok: true }> {
