@@ -168,9 +168,14 @@ export async function adminPasswordLoginStart(req: Request, res: Response) {
 
   req.session.adminOtpLogin = {
     userId: user.userId,
+    role: "ADMIN",
     stage: "OTP_REQUIRED",
     createdAt: nowIso(),
   };
+
+  await new Promise<void>((resolve, reject) => {
+    req.session.save((err) => (err ? reject(err) : resolve()));
+  });
 
   await auditFromReq(prisma, req, {
     userId: user.userId,
@@ -292,6 +297,10 @@ export async function adminPasswordLoginVerifyOtp(req: Request, res: Response) {
   req.session.userId = pending.userId;
   req.session.role = "ADMIN";
   delete req.session.adminOtpLogin;
+
+  await new Promise<void>((resolve, reject) => {
+    req.session.save((err) => (err ? reject(err) : resolve()));
+  });
 
   await auditFromReq(prisma, req, {
     userId: pending.userId,

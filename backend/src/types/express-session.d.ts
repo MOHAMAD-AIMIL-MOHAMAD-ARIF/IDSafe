@@ -38,6 +38,7 @@ declare module "express-session" {
     // Admin password + OTP login
     adminOtpLogin?: {
       userId: number;
+      role: "ADMIN";
       stage: "OTP_REQUIRED";
       createdAt: string;
     };
