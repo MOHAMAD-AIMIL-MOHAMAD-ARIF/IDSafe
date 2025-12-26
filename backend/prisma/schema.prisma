@@ -53,6 +53,7 @@ model User {
   auditLogsAsActor    AuditLog[]           @relation("AuditLogActor")
   updatedConfigs      SystemConfig[]
   deviceKeys          DeviceKey[]
+  adminCredential     AdminCredential?
 }
 
 /**
@@ -213,7 +214,7 @@ model DeviceKey {
 model AdminCredential {
   adminCredentialId Int @id @default(autoincrement())
 
-  userId Int @unique
+  userId Int  @unique
   user   User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   // Email is the username, so no "username" column needed.
@@ -221,7 +222,7 @@ model AdminCredential {
   passwordAlgo String @default("argon2id")
 
   // Optional lockout controls (good for security + easy to implement)
-  failedAttempts Int @default(0)
+  failedAttempts Int       @default(0)
   lockedUntil    DateTime?
 
   createdAt DateTime @default(now())
