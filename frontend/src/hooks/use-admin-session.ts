@@ -13,7 +13,7 @@ type AdminSessionState = {
   error: string | null;
 };
 
-export function useAdminSession(): AdminSessionState {
+export function useAdminSession(refreshKey?: string | number | null): AdminSessionState {
   const [status, setStatus] = useState<AdminSessionStatus>("loading");
   const [session, setSession] = useState<AuthSession | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +55,7 @@ export function useAdminSession(): AdminSessionState {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [refreshKey]);
 
   return { status, session, error };
 }
