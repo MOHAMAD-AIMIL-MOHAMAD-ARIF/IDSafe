@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { AuthSession } from "@/types/auth";
 import { fetchSession } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
@@ -17,6 +18,7 @@ export function useAdminSession(): AdminSessionState {
   const [status, setStatus] = useState<AdminSessionStatus>("loading");
   const [session, setSession] = useState<AuthSession | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     let isActive = true;
@@ -55,7 +57,7 @@ export function useAdminSession(): AdminSessionState {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [pathname]);
 
   return { status, session, error };
 }
