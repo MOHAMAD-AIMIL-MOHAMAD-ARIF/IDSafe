@@ -7,7 +7,7 @@ export const routes = {
   vault: "/vault",
   account: "/account",
   admin: "/admin",
-  adminLogin: "/admin/login",
+  adminLogin: "/admin/auth/login",
   adminUsers: "/admin/users",
   adminLogs: "/admin/logs",
   adminConfigKdf: "/admin/config/kdf",
