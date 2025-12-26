@@ -31,7 +31,7 @@ function navClass(isCurrent: boolean) {
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { status, error } = useAdminSession(pathname ?? "unknown");
+  const { status, error } = useAdminSession();
   const isLogin = useMemo(() => {
     if (!pathname) return false;
     return ["/admin/login", "/admin/login/start", "/admin/login/verify-otp"].includes(pathname);
