@@ -272,7 +272,7 @@ export const postRecoveryData = [
           data: { isActive: false },
         });*/
 
-        return { deviceId: device.deviceId, disabledCreds: disabled.count };
+        return { deviceId: device.deviceId/*, disabledCreds: disabled.count*/ };
       });
 
       // mark recovery step completed for subsequent recovery WebAuthn registration
@@ -291,7 +291,7 @@ export const postRecoveryData = [
           kdfMs: kdfMs ?? null,
           deviceId: result.deviceId,
           deviceLabel: deviceLabel ?? null,
-          disabledCreds: result.disabledCreds,
+          //disabledCreds: result.disabledCreds,
           note: "No passphrase/KEK/DEK/plaintext stored",
         },
       });
