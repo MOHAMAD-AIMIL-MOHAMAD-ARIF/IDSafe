@@ -100,7 +100,7 @@ app.use("/auth/webauthn", authWebauthnRouter);
 app.use("/auth/account", authAccountRouter);
 
 // Admin WebAuthn auth (separate login/registration)
-app.use("/admin/auth/webauthn", adminAuthWebauthnRouter);
+//app.use("/admin/auth/webauthn", adminAuthWebauthnRouter);
 
 // Admin password + OTP auth
 app.use("/admin/auth", adminAuthPasswordRouter);
