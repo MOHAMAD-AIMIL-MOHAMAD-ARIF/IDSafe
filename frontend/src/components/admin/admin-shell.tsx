@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo } from "react";
+import { useAdminSession } from "@/hooks/use-admin-session";
 
 const navItems = [
   { href: "/admin", label: "Dashboard" },
@@ -28,10 +30,49 @@ function navClass(isCurrent: boolean) {
 
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLogin = pathname === "/admin/login";
+  const router = useRouter();
+  const { status, error } = useAdminSession();
+  const isLogin = useMemo(() => {
+    if (!pathname) return false;
+    return ["/admin/login", "/admin/login/start", "/admin/login/verify-otp"].includes(pathname);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isLogin && status === "unauthenticated") {
+      router.replace("/admin/login/start");
+    }
+  }, [isLogin, router, status]);
 
   if (isLogin) {
     return <div className="min-h-screen bg-slate-50 px-6 py-10">{children}</div>;
+  }
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-600">
+        Verifying admin session...
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-600">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error ?? "Unable to verify admin session. Please try again."}
+        </div>
+        <Link
+          className="mt-4 inline-flex text-sm font-semibold text-brand"
+          href="/admin/login/start"
+        >
+          Return to admin login
+        </Link>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return null;
   }
 
   return (

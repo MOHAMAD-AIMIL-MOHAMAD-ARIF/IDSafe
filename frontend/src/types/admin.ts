@@ -72,9 +72,14 @@ export type AdminHealthOverview = {
   metrics: AdminMetric[];
 };
 
-export type AdminLoginResponse = {
-  admin: {
-    name: string;
-    email: string;
+export type AdminLoginStartResponse = {
+  ok: true;
+};
+
+export type AdminLoginVerifyResponse = {
+  ok: true;
+  admin?: {
+    name?: string;
+    email?: string;
   };
 };

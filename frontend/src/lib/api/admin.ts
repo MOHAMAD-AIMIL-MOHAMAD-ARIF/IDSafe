@@ -2,7 +2,8 @@ import { apiClient } from "@/lib/api";
 import type {
   AdminHealthOverview,
   AdminKdfPolicy,
-  AdminLoginResponse,
+  AdminLoginStartResponse,
+  AdminLoginVerifyResponse,
   AdminRecoveryEvent,
   AdminSessionPolicy,
   AdminSummary,
@@ -11,9 +12,13 @@ import type {
   AdminLogEntry,
 } from "@/types/admin";
 
-export type AdminLoginPayload = {
+export type AdminLoginStartPayload = {
   email: string;
   password: string;
+};
+
+export type AdminLoginVerifyPayload = {
+  otp: string;
 };
 
 export type AdminUserQuery = {
@@ -38,8 +43,20 @@ function toQueryString(params: Record<string, string | undefined>) {
   return serialized ? `?${serialized}` : "";
 }
 
-export async function adminLogin(payload: AdminLoginPayload): Promise<AdminLoginResponse> {
-  return apiClient.post<AdminLoginResponse>("/admin/login", payload);
+export async function adminLoginStart(
+  payload: AdminLoginStartPayload,
+): Promise<AdminLoginStartResponse> {
+  return apiClient.post<AdminLoginStartResponse>("/admin/auth/login/start", payload);
+}
+
+export async function adminLoginVerifyOtp(
+  payload: AdminLoginVerifyPayload,
+): Promise<AdminLoginVerifyResponse> {
+  return apiClient.post<AdminLoginVerifyResponse>("/admin/auth/login/verify-otp", payload);
+}
+
+export async function adminLogout(): Promise<{ ok: true }> {
+  return apiClient.post<{ ok: true }>("/admin/auth/logout");
 }
 
 export async function fetchAdminSummary(): Promise<AdminSummary> {

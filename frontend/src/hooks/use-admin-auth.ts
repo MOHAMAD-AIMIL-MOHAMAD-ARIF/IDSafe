@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { adminLogin } from "@/lib/api/admin";
-import type { AdminLoginResponse } from "@/types/admin";
+import { adminLoginStart, adminLoginVerifyOtp } from "@/lib/api/admin";
 import { ApiError } from "@/lib/api/client";
 
 function formatApiError(error: unknown): string {
@@ -11,32 +10,50 @@ function formatApiError(error: unknown): string {
   return "Unexpected error. Please try again.";
 }
 
-export type AdminAuthStatus = "idle" | "loading" | "authenticated" | "error";
+export type AdminAuthStatus =
+  | "idle"
+  | "loading"
+  | "otp-sent"
+  | "authenticated"
+  | "error";
 
 export function useAdminAuth() {
   const [status, setStatus] = useState<AdminAuthStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [profile, setProfile] = useState<AdminLoginResponse["admin"] | null>(null);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const startLogin = useCallback(async (email: string, password: string) => {
     setStatus("loading");
     setErrorMessage(null);
 
     try {
-      const response = await adminLogin({ email, password });
-      setProfile(response.admin);
-      setStatus("authenticated");
-      return response;
+      await adminLoginStart({ email, password });
+      setStatus("otp-sent");
+      return true;
     } catch (error) {
       setStatus("error");
       setErrorMessage(formatApiError(error));
-      return null;
+      return false;
+    }
+  }, []);
+
+  const verifyOtp = useCallback(async (otp: string) => {
+    setStatus("loading");
+    setErrorMessage(null);
+
+    try {
+      await adminLoginVerifyOtp({ otp });
+      setStatus("authenticated");
+      return true;
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(formatApiError(error));
+      return false;
     }
   }, []);
 
   const value = useMemo(
-    () => ({ status, errorMessage, profile, login }),
-    [status, errorMessage, profile, login],
+    () => ({ status, errorMessage, startLogin, verifyOtp }),
+    [status, errorMessage, startLogin, verifyOtp],
   );
 
   return value;
