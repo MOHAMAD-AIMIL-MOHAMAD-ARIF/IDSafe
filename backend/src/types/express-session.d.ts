@@ -35,6 +35,13 @@ declare module "express-session" {
       createdAtMs: number;
     };
 
+    // Admin password + OTP login
+    adminOtpLogin?: {
+      userId: number;
+      stage: "OTP_REQUIRED";
+      createdAt: string;
+    };
+
     // Recovery-only session state (tightly scoped)
     recovery?: {
       userId: number;

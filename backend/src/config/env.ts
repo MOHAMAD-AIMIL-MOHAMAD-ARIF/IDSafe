@@ -59,6 +59,12 @@ export const env = {
   RECOVERY_TOKEN_PEPPER: process.env.RECOVERY_TOKEN_PEPPER ?? "",
   RECOVERY_TOKEN_TYPE: process.env.RECOVERY_TOKEN_TYPE ?? "RECOVERY",
 
+  // Admin OTP auth
+  ADMIN_OTP_TTL_MS: num("ADMIN_OTP_TTL_MS", 5 * 60 * 1000),
+  ADMIN_OTP_PEPPER: process.env.ADMIN_OTP_PEPPER ?? "",
+  ADMIN_LOGIN_MAX_ATTEMPTS: num("ADMIN_LOGIN_MAX_ATTEMPTS", 5),
+  ADMIN_LOGIN_LOCK_MINUTES: num("ADMIN_LOGIN_LOCK_MINUTES", 15),
+
   // SMTP (optional in dev; required if you actually send emails)
   EMAIL_SMTP_HOST: process.env.EMAIL_SMTP_HOST ?? "",
   EMAIL_SMTP_PORT: num("EMAIL_SMTP_PORT", 587),

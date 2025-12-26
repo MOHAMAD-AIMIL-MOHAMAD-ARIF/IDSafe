@@ -36,3 +36,20 @@ export async function sendRecoveryEmail(to: string, verifyUrl: string) {
 
   await transporter.sendMail({ from: EMAIL_FROM, to, subject, text, html });
 }
+
+export async function sendAdminOtpEmail(to: string, otpCode: string) {
+  const transporter = createMailer();
+
+  const subject = "IDSafe admin login verification code";
+  const text =
+    `Your IDSafe admin verification code is: ${otpCode}\n\n` +
+    `It expires in 5 minutes. If you didn’t request this, ignore this email.`;
+
+  const html = `
+    <p>Your IDSafe admin verification code is:</p>
+    <p><strong style="font-size: 18px; letter-spacing: 2px;">${otpCode}</strong></p>
+    <p>It expires in 5 minutes. If you didn’t request this, ignore this email.</p>
+  `;
+
+  await transporter.sendMail({ from: EMAIL_FROM, to, subject, text, html });
+}
