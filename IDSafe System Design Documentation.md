@@ -581,6 +581,8 @@ updatedConfigs SystemConfig\[\]
 
 deviceKeys DeviceKey\[\]
 
+adminCredential     AdminCredential?
+
 }
 
 model WebauthnCredential {
@@ -755,6 +757,22 @@ lastUsedAt DateTime?
 
 @@index(\[userId\])
 
+}
+
+model AdminCredential {
+  adminCredentialId Int @id @default(autoincrement())
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  passwordHash String
+  passwordAlgo String @default("argon2id")
+
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 ### 4.5.2 Data Dictionary
