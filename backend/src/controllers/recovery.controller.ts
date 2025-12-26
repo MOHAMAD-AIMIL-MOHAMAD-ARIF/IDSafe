@@ -271,8 +271,9 @@ export const postRecoveryData = [
           where: { userId, isActive: true },
           data: { isActive: false },
         });*/
+        const disabled = { count: 0 }; // Skipping disabling for now
 
-        return { deviceId: device.deviceId/*, disabledCreds: disabled.count*/ };
+        return { deviceId: device.deviceId, disabledCreds: disabled.count };
       });
 
       // mark recovery step completed for subsequent recovery WebAuthn registration
@@ -291,7 +292,7 @@ export const postRecoveryData = [
           kdfMs: kdfMs ?? null,
           deviceId: result.deviceId,
           deviceLabel: deviceLabel ?? null,
-          //disabledCreds: result.disabledCreds,
+          disabledCreds: result.disabledCreds,
           note: "No passphrase/KEK/DEK/plaintext stored",
         },
       });
