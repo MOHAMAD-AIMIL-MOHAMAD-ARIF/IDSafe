@@ -113,6 +113,11 @@ export default function AccountPage() {
     }
   };
 
+  const handleSignOut = async () => {
+    await logout();
+    router.push(routes.home);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
@@ -140,7 +145,7 @@ export default function AccountPage() {
             </button>
             <button
               type="button"
-              onClick={() => void logout()}
+              onClick={() => void handleSignOut()}
               className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
             >
               Sign out

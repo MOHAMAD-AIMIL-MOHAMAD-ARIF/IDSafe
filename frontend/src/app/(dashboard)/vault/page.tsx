@@ -177,6 +177,12 @@ export default function VaultPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href={routes.account}
+              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300"
+            >
+              Account
+            </Link>
             <button
               type="button"
               onClick={() => void loadEntries()}
