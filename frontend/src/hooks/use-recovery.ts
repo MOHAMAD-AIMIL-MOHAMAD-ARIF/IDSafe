@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { startRegistration } from "@simplewebauthn/browser";
 import { deriveKek256 } from "@/crypto/kdfService.client";
 import { unwrapVaultKeyBytes } from "@/crypto/recoveryUnwrap";
@@ -13,9 +14,11 @@ import {
 import {
   fetchRecoveryParams,
   submitRecoveryDeviceBinding,
+  verifyRecoveryMagicLink,
   type RecoveryParamsResponse,
 } from "@/api/recovery";
 import { ApiError } from "@/lib/api/client";
+import { routes } from "@/lib/config/routes";
 import {
   finishRecoveryPasskeyRegistration,
   startRecoveryPasskeyRegistration,
@@ -57,6 +60,9 @@ function isPasskeyCancelError(error: unknown): boolean {
 }
 
 export function useRecoveryFlow() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
   const [phase, setPhase] = useState<RecoveryPhase>("loading");
   const [recoveryParams, setRecoveryParams] = useState<RecoveryParamsResponse | null>(null);
   const [paramsError, setParamsError] = useState<string | null>(null);
@@ -80,6 +86,10 @@ export function useRecoveryFlow() {
     let isActive = true;
     const loadParams = async () => {
       try {
+        if (token) {
+          await verifyRecoveryMagicLink(token);
+          router.replace(routes.recovery);
+        }
         const response = await fetchRecoveryParams();
         if (!isActive) return;
         setRecoveryParams(response);
@@ -99,7 +109,7 @@ export function useRecoveryFlow() {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [router, token]);
 
   const registerPasskey = useCallback(async () => {
     updateStepStatus("registerPasskey", "in_progress");

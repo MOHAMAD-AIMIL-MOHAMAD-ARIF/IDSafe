@@ -45,6 +45,7 @@ export function zodIssuesToPrismaJson(issues: z.core.$ZodIssue[]): Prisma.InputJ
  */
 export async function verifyRecoveryMagicLink(req: Request, res: Response) {
   const rawToken = typeof req.query.token === "string" ? req.query.token : "";
+  const wantsJson = req.query.mode === "json";
   if (!rawToken) return res.status(400).json({ error: "Missing token" });
 
   const tokenHash = hashToken(rawToken);
@@ -96,12 +97,12 @@ export async function verifyRecoveryMagicLink(req: Request, res: Response) {
     // Avoid caching this response
     res.setHeader("Cache-Control", "no-store");
 
-    // If you prefer redirect UX (most common for magic links):
     const redirectUrl = `${FRONTEND_ORIGIN}${FRONTEND_RECOVERY_PATH}`;
-    return res.redirect(302, redirectUrl);
+    if (wantsJson) {
+      return res.json({ ok: true, redirectUrl });
+    }
 
-    // If you prefer JSON instead, replace the redirect with:
-    // return res.json({ ok: true });
+    return res.redirect(302, redirectUrl);
   });
 }
 
