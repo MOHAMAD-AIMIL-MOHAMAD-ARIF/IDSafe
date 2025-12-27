@@ -187,7 +187,7 @@ const postRecoveryDataSchema = z.object({
 });
 
 /**
- * POST /recovery/data
+ * POST /recovery/bind
  * Requires: requireRecoverySession
  *
  * Client submits:
@@ -310,4 +310,3 @@ export const postRecoveryData = [
     }
   },
 ];
-

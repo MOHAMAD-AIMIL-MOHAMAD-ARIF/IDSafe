@@ -31,7 +31,7 @@ const finishSchema = z.object({
 function ensureRecoveryCompleted(req: Request, res: Response): boolean {
   const r = req.session.recovery!;
   if (!r.completedAt) {
-    res.status(409).json({ error: "Recovery not completed yet. Call POST /recovery/data first." });
+    res.status(409).json({ error: "Recovery not completed yet. Call POST /recovery/bind first." });
     return false;
   }
   return true;
@@ -51,7 +51,7 @@ export function zodIssuesToPrismaJson(issues: z.core.$ZodIssue[]): Prisma.InputJ
  * POST /auth/webauthn/recovery/register/start
  * Requires: requireRecoverySession
  *
- * Also requires: req.session.recovery.completedAt (set by POST /recovery/data)
+ * Also requires: req.session.recovery.completedAt (set by POST /recovery/bind)
  */
 export const recoveryRegisterStart = [
   requireRecoverySession,
