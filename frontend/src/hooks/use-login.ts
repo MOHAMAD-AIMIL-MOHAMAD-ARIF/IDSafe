@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { finishWebauthnLogin, startWebauthnLogin } from "@/lib/api/auth";
 import { fetchDeviceWrappedDek } from "@/lib/api/device";
-import { loadDeviceId, loadDevicePrivateKeyJwk } from "@/lib/storageService.client";
+import { loadDeviceId, loadDevicePrivateKeyJwk, storeDekBytes } from "@/lib/storageService.client";
 import { importDevicePrivateKey, unwrapDekForDevice } from "@/crypto/deviceBinding";
 import { routes } from "@/lib/config/routes";
 
@@ -54,7 +54,8 @@ async function unlockVaultOnDevice(): Promise<UnlockResult> {
 
   try {
     const privateKey = await importDevicePrivateKey(privateKeyJwk);
-    await unwrapDekForDevice({ wrappedDek, devicePrivateKey: privateKey });
+    const dekBytes = await unwrapDekForDevice({ wrappedDek, devicePrivateKey: privateKey });
+    await storeDekBytes(dekBytes);
     return { ok: true };
   } catch {
     return {

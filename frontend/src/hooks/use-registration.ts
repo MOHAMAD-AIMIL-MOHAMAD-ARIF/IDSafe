@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { startRegistration } from "@simplewebauthn/browser";
+import { useAuthContext } from "@/components/auth/auth-provider";
 import { deriveKek256 } from "@/crypto/kdfService.client";
 import { wrapVaultKeyWithKek } from "@/crypto/recoveryWrap";
 import {
@@ -10,7 +11,7 @@ import {
   startPasskeyRegistration,
   uploadRecoveryData,
 } from "@/lib/api/registration";
-import { storeDeviceId, storeDevicePrivateKeyJwk } from "@/lib/storageService.client";
+import { storeDekBytes, storeDeviceId, storeDevicePrivateKeyJwk } from "@/lib/storageService.client";
 import {
   exportPrivateKeyJwk,
   exportPublicKeyJwk,
@@ -80,6 +81,7 @@ function isPasskeyCancelError(error: unknown): boolean {
 export type RegistrationPhase = "form" | "passkey" | "setup" | "complete";
 
 export function useRegistrationFlow() {
+  const { refresh } = useAuthContext();
   const [phase, setPhase] = useState<RegistrationPhase>("form");
   const [steps, setSteps] = useState<RegistrationStep[]>(() => createDefaultSteps());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -148,11 +150,13 @@ export function useRegistrationFlow() {
           wrappedDEK,
         });
 
+        await storeDekBytes(dekBytes);
         await storeDeviceId(deviceBindResponse.device.deviceId);
         await storeDevicePrivateKeyJwk(devicePrivateKey);
         updateStepStatus("deviceBind", "completed");
 
         setPhase("complete");
+        await refresh();
       } catch (error) {
         setSteps((prev) =>
           prev.map((step) =>
@@ -162,7 +166,7 @@ export function useRegistrationFlow() {
         setSetupError(error instanceof Error ? error.message : "Setup failed. Please try again.");
       }
     },
-    [resetSteps, updateStepStatus],
+    [refresh, resetSteps, updateStepStatus],
   );
 
   const submitRegistration = useCallback(
