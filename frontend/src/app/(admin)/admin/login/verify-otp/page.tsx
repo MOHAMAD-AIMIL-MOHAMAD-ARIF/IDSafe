@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 
 function normalizeOtp(value: string) {
-  return value.replace(/\s+/g, "").slice(0, 6);
+  return value.replace(/\D+/g, "").slice(0, 6);
 }
 
 export default function AdminLoginVerifyOtpPage() {

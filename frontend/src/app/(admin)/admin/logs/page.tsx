@@ -1,5 +1,6 @@
 "use client";
 
+import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { useAdminLogs } from "@/hooks/use-admin-logs";
 
@@ -15,7 +16,7 @@ export default function AdminLogsPage() {
     void loadLogs();
   }, [loadLogs]);
 
-  const handleFilter = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFilter = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     await loadLogs({
       level: level === "all" ? undefined : level,
