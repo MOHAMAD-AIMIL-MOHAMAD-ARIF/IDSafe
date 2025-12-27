@@ -54,7 +54,7 @@ export function zodIssuesToPrismaJson(issues: z.core.$ZodIssue[]): Prisma.InputJ
  * Also requires: req.session.recovery.completedAt (set by POST /recovery/bind)
  */
 export const recoveryRegisterStart = [
-  requireRecoverySession,
+  requireRecoverySession(),
   async (req: Request, res: Response) => {
     const recovery = req.session.recovery!;
     const userId = recovery.userId;
@@ -131,7 +131,7 @@ export const recoveryRegisterStart = [
  * - promote recovery session -> normal session (req.session.regenerate)
  */
 export const recoveryRegisterFinish = [
-  requireRecoverySession,
+  requireRecoverySession(),
   async (req: Request, res: Response) => {
     const recovery = req.session.recovery!;
     const userId = recovery.userId;

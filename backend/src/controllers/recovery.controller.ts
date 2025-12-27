@@ -111,7 +111,7 @@ export async function verifyRecoveryMagicLink(req: Request, res: Response) {
  * Returns: { wrappedVaultKey, salt, timeCost, memoryCostKiB, parallelism }
  */
 export const getRecoveryParams = [
-  requireRecoverySession,
+  requireRecoverySession(),
   async (req: Request, res: Response) => {
     const recovery = req.session.recovery!;
     const userId = recovery.userId;
@@ -200,7 +200,7 @@ const postRecoveryDataSchema = z.object({
  * - mark req.session.recovery.completedAt
  */
 export const postRecoveryData = [
-  requireRecoverySession,
+  requireRecoverySession(),
   async (req: Request, res: Response) => {
     const recovery = req.session.recovery!;
     const userId = recovery.userId;
