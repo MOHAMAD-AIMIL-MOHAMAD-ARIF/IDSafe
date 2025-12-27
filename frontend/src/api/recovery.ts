@@ -42,10 +42,10 @@ export async function requestRecoveryMagicLink(email: string): Promise<RecoveryR
 }
 
 /**
- * Calls POST /recovery/data during recovery session to bind a device key.
+ * Calls POST /recovery/bind during recovery session to bind a device key.
  */
 export async function submitRecoveryDeviceBinding(
   payload: RecoveryDeviceBindRequest,
 ): Promise<RecoveryDeviceBindResponse> {
-  return apiClient.post<RecoveryDeviceBindResponse>("/recovery/data", payload);
+  return apiClient.post<RecoveryDeviceBindResponse>("/recovery/bind", payload);
 }
