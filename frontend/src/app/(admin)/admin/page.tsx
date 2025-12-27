@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAdminSummary } from "@/hooks/use-admin-summary";
+import { adminLogout } from "@/lib/api/admin";
 
 function formatPercent(value?: number | null) {
   if (value === undefined || value === null) return "—";
@@ -17,11 +19,26 @@ function formatDate(value?: string | null) {
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const { summary, events, status, errorMessage, loadSummary } = useAdminSummary();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   useEffect(() => {
     void loadSummary();
   }, [loadSummary]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    setLogoutError(null);
+    try {
+      await adminLogout();
+      router.replace("/admin/login/start");
+    } catch (err) {
+      setLogoutError(err instanceof Error ? err.message : "Unable to log out.");
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -42,6 +59,14 @@ export default function AdminDashboardPage() {
             >
               Refresh
             </button>
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              disabled={isLoggingOut}
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoggingOut ? "Logging out..." : "Logout"}
+            </button>
             <Link
               href="/admin/health"
               className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
@@ -52,6 +77,11 @@ export default function AdminDashboardPage() {
         </div>
         {status === "loading" && (
           <p className="mt-4 text-sm text-slate-500">Loading live metrics...</p>
+        )}
+        {logoutError && (
+          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {logoutError}
+          </div>
         )}
         {errorMessage && (
           <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
