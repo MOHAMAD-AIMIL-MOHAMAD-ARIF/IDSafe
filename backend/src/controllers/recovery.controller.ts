@@ -113,64 +113,79 @@ export async function verifyRecoveryMagicLink(req: Request, res: Response) {
 export const getRecoveryParams = [
   requireRecoverySession,
   async (req: Request, res: Response) => {
-    const recovery = req.session.recovery!;
-    const userId = recovery.userId;
+    try {
+      const recovery = req.session.recovery!;
+      const userId = recovery.userId;
 
-    const rd = await prisma.recoveryData.findUnique({
-      where: { userId },
-      select: {
-        wrappedVaultKey: true,
-        kdfSalt: true,
-        kdfAlgorithm: true,
-        kdfTimeCost: true,
-        kdfMemoryCost: true,
-        kdfParallelism: true,
-        updatedAt: true,
-      },
-    });
+      const rd = await prisma.recoveryData.findUnique({
+        where: { userId },
+        select: {
+          wrappedVaultKey: true,
+          kdfSalt: true,
+          kdfAlgorithm: true,
+          kdfTimeCost: true,
+          kdfMemoryCost: true,
+          kdfParallelism: true,
+          updatedAt: true,
+        },
+      });
 
-    if (!rd) {
+      if (!rd) {
+        await auditFromReq(prisma, req, {
+          userId,
+          actorId: userId,
+          eventType: "RECOVERY.PARAMS.FAIL",
+          detailsJson: { reason: "RECOVERY_DATA_NOT_FOUND" },
+        });
+        return res.status(404).json({ error: "Recovery data not found" });
+      }
+
+      // If you only support argon2id for now, you can enforce it:
+      if (rd.kdfAlgorithm !== "argon2id") {
+        await auditFromReq(prisma, req, {
+          userId,
+          actorId: userId,
+          eventType: "RECOVERY.PARAMS.FAIL",
+          detailsJson: { reason: "UNSUPPORTED_KDF", kdfAlgorithm: rd.kdfAlgorithm },
+        });
+        return res.status(400).json({ error: "Unsupported KDF algorithm" });
+      }
+
       await auditFromReq(prisma, req, {
         userId,
         actorId: userId,
-        eventType: "RECOVERY.PARAMS.FAIL",
-        detailsJson: { reason: "RECOVERY_DATA_NOT_FOUND" },
+        eventType: "RECOVERY.PARAMS.OK",
+        detailsJson: {
+          kdfAlgorithm: rd.kdfAlgorithm,
+          timeCost: rd.kdfTimeCost,
+          memoryCostKiB: rd.kdfMemoryCost,
+          parallelism: rd.kdfParallelism,
+        },
       });
-      return res.status(404).json({ error: "Recovery data not found" });
-    }
 
-    // If you only support argon2id for now, you can enforce it:
-    if (rd.kdfAlgorithm !== "argon2id") {
-      await auditFromReq(prisma, req, {
-        userId,
-        actorId: userId,
-        eventType: "RECOVERY.PARAMS.FAIL",
-        detailsJson: { reason: "UNSUPPORTED_KDF", kdfAlgorithm: rd.kdfAlgorithm },
-      });
-      return res.status(400).json({ error: "Unsupported KDF algorithm" });
-    }
-
-    await auditFromReq(prisma, req, {
-      userId,
-      actorId: userId,
-      eventType: "RECOVERY.PARAMS.OK",
-      detailsJson: {
-        kdfAlgorithm: rd.kdfAlgorithm,
+      res.setHeader("Cache-Control", "no-store");
+      return res.json({
+        ok: true,
+        wrappedVaultKey: rd.wrappedVaultKey,
+        salt: rd.kdfSalt,
         timeCost: rd.kdfTimeCost,
         memoryCostKiB: rd.kdfMemoryCost,
         parallelism: rd.kdfParallelism,
-      },
-    });
-
-    res.setHeader("Cache-Control", "no-store");
-    return res.json({
-      ok: true,
-      wrappedVaultKey: rd.wrappedVaultKey,
-      salt: rd.kdfSalt,
-      timeCost: rd.kdfTimeCost,
-      memoryCostKiB: rd.kdfMemoryCost,
-      parallelism: rd.kdfParallelism,
-    });
+      });
+    } catch (error) {
+      const recovery = req.session.recovery;
+      const userId = recovery?.userId ?? null;
+      await auditFromReq(prisma, req, {
+        userId,
+        actorId: userId,
+        eventType: "RECOVERY.PARAMS.FAIL",
+        detailsJson: {
+          reason: "UNEXPECTED_ERROR",
+          message: error instanceof Error ? error.message : "Unknown error",
+        },
+      });
+      return res.status(500).json({ error: "Failed to load recovery parameters" });
+    }
   },
 ];
 

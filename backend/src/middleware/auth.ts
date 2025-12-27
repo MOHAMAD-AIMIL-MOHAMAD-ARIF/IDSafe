@@ -84,65 +84,68 @@ export function requireRecoverySession(options: RequireRecoveryOptions = {}) {
   const ttlMs = options.ttlMs ?? 15 * 60 * 1000;
 
   return async (req: Request, res: Response, next: NextFunction) => {
-    const recovery = req.session?.recovery;
-    if (!recovery?.userId || !recovery?.tokenId || !recovery?.verifiedAt) {
-      return res.status(401).json({ error: "Recovery session required" });
+    try {
+      const recovery = req.session?.recovery;
+      if (!recovery?.userId || !recovery?.tokenId || !recovery?.verifiedAt) {
+        return res.status(401).json({ error: "Recovery session required" });
+      }
+
+      const verifiedAt = new Date(recovery.verifiedAt);
+      if (Number.isNaN(verifiedAt.getTime())) {
+        // Corrupt state -> clear it
+        delete req.session.recovery;
+        return res.status(401).json({ error: "Invalid recovery session" });
+      }
+
+      const now = Date.now();
+      if (now - verifiedAt.getTime() > ttlMs) {
+        delete req.session.recovery;
+        return res.status(401).json({ error: "Recovery session expired" });
+      }
+
+      // DB verification: ensure token is the same one, consumed, and still within expiry window
+      const token = await prisma.recoveryToken.findUnique({
+        where: { tokenId: recovery.tokenId },
+        select: {
+          tokenId: true,
+          userId: true,
+          tokenType: true,
+          expiresAt: true,
+          usedAt: true,
+        },
+      });
+
+      if (!token) {
+        delete req.session.recovery;
+        return res.status(401).json({ error: "Invalid recovery token" });
+      }
+
+      if (token.userId !== recovery.userId) {
+        delete req.session.recovery;
+        return res.status(401).json({ error: "Recovery token mismatch" });
+      }
+
+      // Must have been consumed during magic-link verification
+      if (!token.usedAt) {
+        delete req.session.recovery;
+        return res.status(401).json({ error: "Recovery token not consumed" });
+      }
+
+      // Must still be within expiry time
+      if (token.expiresAt.getTime() <= now) {
+        delete req.session.recovery;
+        return res.status(401).json({ error: "Recovery token expired" });
+      }
+
+      // Optional strict check for tokenType (use if your model defines it)
+      if (options.tokenType && token.tokenType !== options.tokenType) {
+        delete req.session.recovery;
+        return res.status(401).json({ error: "Wrong recovery token type" });
+      }
+
+      return next();
+    } catch {
+      return res.status(500).json({ error: "Failed to validate recovery session" });
     }
-
-    const verifiedAt = new Date(recovery.verifiedAt);
-    if (Number.isNaN(verifiedAt.getTime())) {
-      // Corrupt state -> clear it
-      delete req.session.recovery;
-      return res.status(401).json({ error: "Invalid recovery session" });
-    }
-
-    const now = Date.now();
-    if (now - verifiedAt.getTime() > ttlMs) {
-      delete req.session.recovery;
-      return res.status(401).json({ error: "Recovery session expired" });
-    }
-
-    // DB verification: ensure token is the same one, consumed, and still within expiry window
-    const token = await prisma.recoveryToken.findUnique({
-      where: { tokenId: recovery.tokenId },
-      select: {
-        tokenId: true,
-        userId: true,
-        tokenType: true,
-        expiresAt: true,
-        usedAt: true,
-      },
-    });
-
-    if (!token) {
-      delete req.session.recovery;
-      return res.status(401).json({ error: "Invalid recovery token" });
-    }
-
-    if (token.userId !== recovery.userId) {
-      delete req.session.recovery;
-      return res.status(401).json({ error: "Recovery token mismatch" });
-    }
-
-    // Must have been consumed during magic-link verification
-    if (!token.usedAt) {
-      delete req.session.recovery;
-      return res.status(401).json({ error: "Recovery token not consumed" });
-    }
-
-    // Must still be within expiry time
-    if (token.expiresAt.getTime() <= now) {
-      delete req.session.recovery;
-      return res.status(401).json({ error: "Recovery token expired" });
-    }
-
-    // Optional strict check for tokenType (use if your model defines it)
-    if (options.tokenType && token.tokenType !== options.tokenType) {
-      delete req.session.recovery;
-      return res.status(401).json({ error: "Wrong recovery token type" });
-    }
-
-    return next();
   };
 }
-
