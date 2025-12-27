@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useAuthContext } from "@/components/auth/auth-provider";
 import { usePasswordGenerator } from "@/hooks/use-password-generator";
@@ -40,6 +41,7 @@ const PASSWORD_TOGGLE_OPTIONS = [
 
 export default function VaultPage() {
   const { status, logout } = useAuthContext();
+  const router = useRouter();
   const {
     entries,
     status: vaultStatus,
@@ -60,8 +62,16 @@ export default function VaultPage() {
   const [clipboardMessage, setClipboardMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    void loadEntries();
-  }, [loadEntries]);
+    if (status === "authenticated") {
+      void loadEntries();
+    }
+  }, [loadEntries, status]);
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace(routes.login);
+    }
+  }, [router, status]);
 
   useEffect(() => {
     if (!activeEntryId) {
@@ -147,6 +157,11 @@ export default function VaultPage() {
     }
   };
 
+  const handleSignOut = async () => {
+    await logout();
+    router.push(routes.home);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 px-6 py-10 text-slate-900">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
@@ -171,7 +186,7 @@ export default function VaultPage() {
             </button>
             <button
               type="button"
-              onClick={() => void logout()}
+              onClick={() => void handleSignOut()}
               className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
             >
               Sign out
