@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useAuthContext } from "@/components/auth/auth-provider";
@@ -21,7 +22,8 @@ function formatIdentifier(value: string, visible = 10) {
 }
 
 export default function AccountPage() {
-  const { status: authStatus, logout } = useAuthContext();
+  const { status: authStatus, logout, isEndUser } = useAuthContext();
+  const router = useRouter();
   const {
     profile,
     credentials,
@@ -42,8 +44,16 @@ export default function AccountPage() {
   const [passphraseMessage, setPassphraseMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    void loadAccount();
-  }, [loadAccount]);
+    if (authStatus === "authenticated" && isEndUser) {
+      void loadAccount();
+    }
+  }, [authStatus, isEndUser, loadAccount]);
+
+  useEffect(() => {
+    if (authStatus === "unauthenticated" || (authStatus === "authenticated" && !isEndUser)) {
+      router.replace(routes.login);
+    }
+  }, [authStatus, isEndUser, router]);
 
   const passphraseMatch = passphrase.length > 0 && passphrase === confirmPassphrase;
   const passphraseReady = passphraseMatch && passphrase.length >= 8;
