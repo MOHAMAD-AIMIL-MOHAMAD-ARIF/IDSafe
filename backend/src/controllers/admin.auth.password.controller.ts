@@ -294,9 +294,9 @@ export async function adminPasswordLoginVerifyOtp(req: Request, res: Response) {
   ]);
 
   await regenerateSession(req);
+  delete req.session.adminOtpLogin;
   req.session.userId = pending.userId;
   req.session.role = "ADMIN";
-  delete req.session.adminOtpLogin;
 
   await new Promise<void>((resolve, reject) => {
     req.session.save((err) => (err ? reject(err) : resolve()));
