@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { useRouter } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
+import { useAuthContext } from "@/components/auth/auth-provider";
 import { finishWebauthnLogin, startWebauthnLogin } from "@/lib/api/auth";
 import { fetchDeviceWrappedDek } from "@/lib/api/device";
 import { loadDeviceId, loadDevicePrivateKeyJwk, storeDekBytes } from "@/lib/storageService.client";
@@ -68,6 +69,7 @@ async function unlockVaultOnDevice(): Promise<UnlockResult> {
 
 export function useLoginFlow() {
   const router = useRouter();
+  const { refresh } = useAuthContext();
   const [phase, setPhase] = useState<LoginPhase>("form");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lockedReason, setLockedReason] = useState<string | null>(null);
@@ -95,6 +97,7 @@ export function useLoginFlow() {
           return;
         }
 
+        await refresh();
         router.push(routes.vault);
       } catch (error) {
         setPhase("form");
@@ -111,7 +114,7 @@ export function useLoginFlow() {
         setIsSubmitting(false);
       }
     },
-    [router],
+    [refresh,router],
   );
 
   const value = useMemo(
