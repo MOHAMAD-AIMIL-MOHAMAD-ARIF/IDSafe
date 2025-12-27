@@ -146,9 +146,3 @@ export function requireRecoverySession(options: RequireRecoveryOptions = {}) {
   };
 }
 
-export function requireRecoveryCompleted(req: Request, res: Response, next: NextFunction) {
-  const r = req.session?.recovery;
-  if (!r?.userId || !r?.tokenId) return res.status(401).json({ error: "Recovery session required" });
-  if (!r.completedAt) return res.status(409).json({ error: "Complete recovery step first" });
-  return next();
-}

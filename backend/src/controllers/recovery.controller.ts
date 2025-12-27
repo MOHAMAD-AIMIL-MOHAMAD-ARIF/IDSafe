@@ -197,7 +197,6 @@ const postRecoveryDataSchema = z.object({
  * Server does:
  * - create DeviceKey row
  * - update RecoveryData.updatedAt (touch)
- * - deactivate existing WebauthnCredential rows (forces re-register after recovery)
  * - mark req.session.recovery.completedAt
  */
 export const postRecoveryData = [
