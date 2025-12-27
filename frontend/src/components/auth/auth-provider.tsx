@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { AuthSession, AuthRole } from "@/types/auth";
 import { fetchSession, logout as apiLogout } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
@@ -20,6 +21,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [session, setSession] = useState<AuthSession | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +54,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (pathname?.startsWith("/recovery")) {
+      setSession(null);
+      setStatus("unauthenticated");
+      setError(null);
+      return;
+    }
     void refresh();
-  }, [refresh]);
+  }, [pathname, refresh]);
 
   const value = useMemo<AuthContextValue>(() => {
     const role: AuthRole | null = session?.role ?? null;
