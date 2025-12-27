@@ -96,9 +96,13 @@ export async function verifyRecoveryMagicLink(req: Request, res: Response) {
     // Avoid caching this response
     res.setHeader("Cache-Control", "no-store");
 
-    // If you prefer redirect UX (most common for magic links):
     const redirectUrl = `${FRONTEND_ORIGIN}${FRONTEND_RECOVERY_PATH}`;
-    return res.redirect(302, redirectUrl);
+    return req.session.save((saveErr) => {
+      if (saveErr) return res.status(500).json({ error: "Failed to persist recovery session" });
+
+      // If you prefer redirect UX (most common for magic links):
+      return res.redirect(302, redirectUrl);
+    });
 
     // If you prefer JSON instead, replace the redirect with:
     // return res.json({ ok: true });
