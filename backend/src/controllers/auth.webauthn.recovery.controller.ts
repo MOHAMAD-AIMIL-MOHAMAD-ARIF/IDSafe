@@ -78,16 +78,11 @@ export const recoveryRegisterStart = [
 
     const { rpID, rpName } = getWebAuthnEnv();
 
-    // Exclude active credentials (should be 0 if you deactivated them on recovery)
-    const existingCreds = await prisma.webauthnCredential.findMany({
+    // For recovery we intentionally do NOT exclude existing credentials.
+    // Excluding causes "authenticator was previously registered" when the device already has a passkey.
+    const existingActiveCount = await prisma.webauthnCredential.count({
       where: { userId, isActive: true },
-      select: { externalCredentialId: true },
     });
-
-    const excludeCredentials = existingCreds.map((c) => ({
-      id: c.externalCredentialId, // keep as base64url string (matches your DB)
-      type: "public-key" as const,
-    }));
 
     const options = await generateRegistrationOptions({
       rpName,
@@ -96,7 +91,6 @@ export const recoveryRegisterStart = [
       userName: user.email,
       userDisplayName: user.email,
       attestationType: "none",
-      excludeCredentials,
       authenticatorSelection: {
         residentKey: "preferred",
         userVerification: "preferred",
@@ -113,7 +107,10 @@ export const recoveryRegisterStart = [
       userId,
       actorId: userId,
       eventType: "WEBAUTHN.RECOVERY.REGISTER.START.OK",
-      detailsJson: { excludeCount: excludeCredentials.length },
+      detailsJson: {
+        existingActiveCount,
+        excludeSkippedForRecovery: true,
+      },
     });
 
     res.setHeader("Cache-Control", "no-store");
