@@ -14,6 +14,11 @@ export type RecoveryRequestResponse = {
   ok: true;
 };
 
+export type RecoveryVerifyResponse = {
+  ok: true;
+  redirectUrl: string;
+};
+
 export type RecoveryDeviceBindRequest = {
   kdfVerified: boolean;
   kdfMs?: number;
@@ -32,6 +37,16 @@ export type RecoveryDeviceBindResponse = {
  */
 export async function fetchRecoveryParams(): Promise<RecoveryParamsResponse> {
   return apiClient.get<RecoveryParamsResponse>("/recovery/params", { cache: "no-store" });
+}
+
+/**
+ * Calls GET /recovery/verify?token=...&mode=json to mint recovery session.
+ */
+export async function verifyRecoveryMagicLink(token: string): Promise<RecoveryVerifyResponse> {
+  return apiClient.get<RecoveryVerifyResponse>(
+    `/recovery/verify?token=${encodeURIComponent(token)}&mode=json`,
+    { cache: "no-store" },
+  );
 }
 
 /**

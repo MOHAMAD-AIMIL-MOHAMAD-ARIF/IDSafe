@@ -12,7 +12,8 @@ const requestSchema = z.object({
 const TOKEN_TYPE = "RECOVERY" as const;
 
 const PEPPER = process.env.RECOVERY_TOKEN_PEPPER ?? "";
-const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://localhost:4000";
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? "http://localhost:3000";
+const FRONTEND_RECOVERY_PATH = process.env.FRONTEND_RECOVERY_PATH ?? "/recovery";
 const RECOVERY_TOKEN_TTL_MS = Number(process.env.RECOVERY_TOKEN_TTL_MS ?? 15 * 60 * 1000);
 
 // base64url token, safe for URLs
@@ -29,8 +30,8 @@ function hashToken(rawToken: string): string {
  *
  * - Accepts email
  * - If user exists, create RecoveryToken row (tokenHash, tokenType="RECOVERY", expiresAt, usedAt=null)
- * - Emails magic link to backend verify endpoint:
- *      GET /recovery/verify?token=RAW
+ * - Emails magic link to frontend recovery route with token query:
+ *      GET /recovery?token=RAW
  *
  * Security: returns ok even if email not found (prevents user enumeration).
  */
@@ -90,7 +91,7 @@ export async function requestRecoveryMagicLink(req: Request, res: Response) {
     select: { tokenId: true },
   });
 
-  const verifyUrl = `${BACKEND_ORIGIN}/recovery/verify?token=${encodeURIComponent(rawToken)}`;
+  const verifyUrl = `${FRONTEND_ORIGIN}${FRONTEND_RECOVERY_PATH}?token=${encodeURIComponent(rawToken)}`;
 
   try {
     await sendRecoveryEmail(email, verifyUrl);
