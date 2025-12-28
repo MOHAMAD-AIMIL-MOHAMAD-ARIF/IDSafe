@@ -46,6 +46,16 @@ async function main() {
       description: "Session idle timeout in seconds (invalidate on timeout).",
     },
     {
+      configKey: "session.idleTimeoutMinutes",
+      configValue: "15",
+      description: "Admin-configurable idle timeout in minutes.",
+    },
+    {
+      configKey: "session.rotationMinutes",
+      configValue: "30",
+      description: "Admin-configurable session rotation interval in minutes.",
+    },
+    {
       configKey: "session.cookie.sameSite",
       configValue: "lax",
       description: "SameSite policy for session cookie (lax/strict/none).",

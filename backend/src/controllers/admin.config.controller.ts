@@ -21,6 +21,16 @@ const kdfPolicySchema = z.object({
   saltSize: z.number().int().min(8).max(64).optional(),
 });
 
+const SESSION_POLICY_KEYS = {
+  idleTimeoutMinutes: "session.idleTimeoutMinutes",
+  sessionRotationMinutes: "session.rotationMinutes",
+} as const;
+
+const sessionPolicySchema = z.object({
+  idleTimeoutMinutes: z.number().int().min(5).max(1440).optional(),
+  sessionRotationMinutes: z.number().int().min(5).max(1440).optional(),
+});
+
 async function upsertConfig(adminUserId: number, key: string, value: string) {
   return prisma.systemConfig.upsert({
     where: { configKey: key },
@@ -98,4 +108,64 @@ export async function adminUpdateKdfPolicy(req: Request, res: Response) {
   }
 
   return adminGetKdfPolicy(req, res);
+}
+
+/**
+ * GET /admin/config/session
+ */
+export async function adminGetSessionPolicy(_req: Request, res: Response) {
+  const keys = Object.values(SESSION_POLICY_KEYS);
+
+  const rows = await prisma.systemConfig.findMany({
+    where: { configKey: { in: keys } },
+    select: { configKey: true, configValue: true },
+  });
+
+  const map = new Map(rows.map((row) => [row.configKey, row.configValue]));
+
+  return res.json({
+    idleTimeoutMinutes: toInt(map.get(SESSION_POLICY_KEYS.idleTimeoutMinutes), 15),
+    sessionRotationMinutes: toInt(map.get(SESSION_POLICY_KEYS.sessionRotationMinutes), 30),
+  });
+}
+
+/**
+ * PUT /admin/config/session
+ */
+export async function adminUpdateSessionPolicy(req: Request, res: Response) {
+  const adminUserId = req.session.userId!;
+  const parsed = sessionPolicySchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
+  }
+
+  const updates: Array<Promise<unknown>> = [];
+  const data = parsed.data;
+
+  if (data.idleTimeoutMinutes !== undefined) {
+    updates.push(
+      upsertConfig(
+        adminUserId,
+        SESSION_POLICY_KEYS.idleTimeoutMinutes,
+        String(data.idleTimeoutMinutes),
+      ),
+    );
+  }
+
+  if (data.sessionRotationMinutes !== undefined) {
+    updates.push(
+      upsertConfig(
+        adminUserId,
+        SESSION_POLICY_KEYS.sessionRotationMinutes,
+        String(data.sessionRotationMinutes),
+      ),
+    );
+  }
+
+  if (updates.length > 0) {
+    await Promise.all(updates);
+  }
+
+  return adminGetSessionPolicy(req, res);
 }
