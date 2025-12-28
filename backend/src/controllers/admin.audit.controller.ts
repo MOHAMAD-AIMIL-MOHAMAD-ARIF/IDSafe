@@ -12,6 +12,9 @@ const auditQuerySchema = z.object({
   eventType: z.string().optional(),
   ipAddress: z.string().optional(),
   status: z.enum(["success", "failure"]).optional(),
+  level: z.enum(["debug", "info", "warn", "error"]).optional(),
+  service: z.string().optional(),
+  query: z.string().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(5000).optional(),
@@ -48,6 +51,78 @@ function buildEventTypeFilter(eventTypeRaw?: string): Prisma.StringFilter | unde
   return { in: eventTypes };
 }
 
+function buildLevelFilter(level?: string): Prisma.AuditLogWhereInput | undefined {
+  if (!level) return undefined;
+
+  if (level === "debug") {
+    return { eventType: { endsWith: ".DEBUG" } };
+  }
+
+  if (level === "info") {
+    return {
+      OR: [{ eventType: { endsWith: ".SUCCESS" } }, { eventType: { endsWith: ".OK" } }],
+    };
+  }
+
+  if (level === "error") {
+    return {
+      OR: [
+        { eventType: { endsWith: ".FAIL" } },
+        { eventType: { endsWith: ".FAILURE" } },
+        { eventType: { endsWith: ".DENIED" } },
+      ],
+    };
+  }
+
+  if (level === "warn") {
+    return {
+      NOT: {
+        OR: [
+          { eventType: { endsWith: ".SUCCESS" } },
+          { eventType: { endsWith: ".OK" } },
+          { eventType: { endsWith: ".FAIL" } },
+          { eventType: { endsWith: ".FAILURE" } },
+          { eventType: { endsWith: ".DENIED" } },
+          { eventType: { endsWith: ".DEBUG" } },
+        ],
+      },
+    };
+  }
+
+  return undefined;
+}
+
+function buildServiceFilter(serviceRaw?: string): Prisma.StringFilter | undefined {
+  if (!serviceRaw) return undefined;
+  const service = serviceRaw.trim();
+  if (!service) return undefined;
+  const prefix = service.endsWith(".") ? service : `${service}.`;
+  return { startsWith: prefix, mode: "insensitive" };
+}
+
+function buildSearchFilter(queryRaw?: string): Prisma.AuditLogWhereInput | undefined {
+  if (!queryRaw) return undefined;
+  const query = queryRaw.trim();
+  if (!query) return undefined;
+
+  const numeric = Number(query);
+  const idFilter =
+    Number.isInteger(numeric) && numeric > 0
+      ? [{ userId: numeric }, { actorId: numeric }]
+      : [];
+
+  return {
+    OR: [
+      { eventType: { contains: query, mode: "insensitive" } },
+      { ipAddress: { contains: query } },
+      { userAgent: { contains: query, mode: "insensitive" } },
+      { subject: { email: { contains: query, mode: "insensitive" } } },
+      { actor: { email: { contains: query, mode: "insensitive" } } },
+      ...idFilter,
+    ],
+  };
+}
+
 function buildAuditLogWhere(parsed: z.infer<typeof auditQuerySchema>): Prisma.AuditLogWhereInput {
   const clauses: Prisma.AuditLogWhereInput[] = [];
 
@@ -59,6 +134,15 @@ function buildAuditLogWhere(parsed: z.infer<typeof auditQuerySchema>): Prisma.Au
 
   const eventTypeFilter = buildEventTypeFilter(parsed.eventType);
   if (eventTypeFilter) clauses.push({ eventType: eventTypeFilter });
+
+  const levelFilter = buildLevelFilter(parsed.level);
+  if (levelFilter) clauses.push(levelFilter);
+
+  const serviceFilter = buildServiceFilter(parsed.service);
+  if (serviceFilter) clauses.push({ eventType: serviceFilter });
+
+  const searchFilter = buildSearchFilter(parsed.query);
+  if (searchFilter) clauses.push(searchFilter);
 
   if (parsed.status === "success") {
     clauses.push({ eventType: { endsWith: ".SUCCESS" } });

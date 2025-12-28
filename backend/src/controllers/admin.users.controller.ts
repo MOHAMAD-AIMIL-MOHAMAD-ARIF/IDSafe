@@ -5,6 +5,11 @@ import { pool, prisma } from "../db.js";
 
 const userStatusSchema = z.enum(["ACTIVE", "LOCKED", "DEACTIVATED"]);
 
+const userQuerySchema = z.object({
+  query: z.string().optional(),
+  status: z.string().optional(),
+});
+
 function parseUserId(raw: string | undefined) {
   const userId = Number(raw);
   if (!Number.isInteger(userId) || userId <= 0) {
@@ -18,8 +23,37 @@ function parseUserId(raw: string | undefined) {
  * Returns non-sensitive metadata for all users.
  */
 export async function adminListUsers(_req: Request, res: Response) {
+  const parsed = userQuerySchema.safeParse(_req.query);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid query", issues: parsed.error.issues });
+  }
+
+  const { query, status } = parsed.data;
+  const normalizedStatus = status?.toUpperCase();
+  const mappedStatus =
+    normalizedStatus === "SUSPENDED" ? "DEACTIVATED" : normalizedStatus;
+  const statusValue = userStatusSchema.safeParse(mappedStatus);
+
+  if (status && !statusValue.success) {
+    return res.status(400).json({ error: "Invalid status" });
+  }
+
+  const search = query?.trim();
+  const userId = search && Number.isInteger(Number(search)) ? Number(search) : undefined;
+
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
+    where: {
+      ...(statusValue.success ? { status: statusValue.data } : {}),
+      ...(search
+        ? {
+            OR: [
+              { email: { contains: search, mode: "insensitive" } },
+              ...(userId ? [{ userId }] : []),
+            ],
+          }
+        : {}),
+    },
     select: {
       userId: true,
       email: true,
