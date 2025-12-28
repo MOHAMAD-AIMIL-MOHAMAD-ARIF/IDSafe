@@ -14,7 +14,6 @@ import { authWebauthnRouter } from "./routes/auth.webauthn.routes.js";
 import { authDeviceRouter } from "./routes/auth.device.routes.js";
 import { authAccountRouter } from "./routes/auth.account.routes.js";
 import { adminAuthPasswordRouter } from "./routes/admin.auth.password.routes.js";
-import { adminWebauthnRouter } from "./routes/admin.webauthn.routes.js";
 import { adminUsersRouter } from "./routes/admin.users.routes.js";
 import { adminAuditRouter } from "./routes/admin.audit.routes.js";
 import { adminSystemRouter } from "./routes/admin.system.routes.js";
@@ -100,17 +99,11 @@ app.use("/auth/webauthn", authWebauthnRouter);
 // End-user account profile
 app.use("/auth/account", authAccountRouter);
 
-// Admin WebAuthn auth (separate login/registration)
-//app.use("/admin/auth/webauthn", adminAuthWebauthnRouter);
-
 // Admin password + OTP auth
 app.use("/admin/auth", adminAuthPasswordRouter);
 
 // Device-binding
 app.use("/auth/device", authDeviceRouter);
-
-// Admin WebAuthn config/visibility
-app.use("/admin/webauthn", adminWebauthnRouter);
 
 // Admin user management
 app.use("/admin/users", adminUsersRouter);

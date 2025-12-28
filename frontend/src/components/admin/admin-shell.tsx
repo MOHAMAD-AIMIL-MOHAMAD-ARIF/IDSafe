@@ -10,7 +10,6 @@ const navItems = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/logs", label: "Logs" },
   { href: "/admin/config/kdf", label: "KDF policy" },
-  { href: "/admin/config/webauthn", label: "WebAuthn" },
   { href: "/admin/config/session", label: "Session" },
   { href: "/admin/health", label: "Health & metrics" },
 ];
