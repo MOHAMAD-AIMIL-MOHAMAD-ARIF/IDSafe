@@ -39,7 +39,7 @@ export default function AdminSessionConfigPage() {
       <header className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-semibold text-slate-900">Session policy</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Define session timeouts, rotation cadence, and MFA requirements.
+          Define session timeouts and rotation cadence.
         </p>
       </header>
 

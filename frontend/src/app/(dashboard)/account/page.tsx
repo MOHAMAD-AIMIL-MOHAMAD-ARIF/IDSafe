@@ -102,7 +102,7 @@ export default function AccountPage() {
   };
 
   const handleDeleteDevice = async (deviceId: number) => {
-    const confirmed = window.confirm("Delete this device binding?");
+    const confirmed = window.confirm("Delete this device binding? Removing it will require recovery to unlock the vault on the device again later.");
     if (!confirmed) return;
     try {
       await removeDeviceBinding(deviceId);
