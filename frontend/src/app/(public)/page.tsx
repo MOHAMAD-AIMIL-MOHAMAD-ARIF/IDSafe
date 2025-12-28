@@ -50,7 +50,7 @@ export default function LandingPage() {
                 </ButtonLink>
               </div>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+            {/* <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
               <div className="flex flex-col gap-6">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -76,7 +76,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
           </section>
 
           <section className="grid gap-6 md:grid-cols-3">
