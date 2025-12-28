@@ -36,6 +36,14 @@ export type AdminLogFilters = {
   query?: string;
 };
 
+function resolveApiBaseUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_BACKEND_ORIGIN ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    "http://localhost:4000"
+  );
+}
+
 function toQueryString(params: Record<string, string | undefined>) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -190,6 +198,20 @@ export async function fetchAdminLogs(filters: AdminLogFilters = {}): Promise<{ l
   });
   const response = await apiClient.get<AdminAuditLogApiResponse>(`/admin/audit-logs${query}`);
   return { logs: response.logs.map(mapAuditLogEntry) };
+}
+
+export async function exportAdminAuditLogsCsv(): Promise<Blob> {
+  const response = await fetch(`${resolveApiBaseUrl()}/admin/audit-logs/export`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new Error(`Export failed (${response.status}). ${message}`.trim());
+  }
+
+  return response.blob();
 }
 
 export async function fetchKdfPolicy(): Promise<AdminKdfPolicy> {

@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { useAdminLogs } from "@/hooks/use-admin-logs";
+import { exportAdminAuditLogsCsv } from "@/lib/api/admin";
 
 export default function AdminLogsPage() {
   const { logs, status, errorMessage, loadLogs } = useAdminLogs();
@@ -11,6 +12,8 @@ export default function AdminLogsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [query, setQuery] = useState("");
+  const [exportStatus, setExportStatus] = useState<"idle" | "loading">("idle");
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     void loadLogs();
@@ -27,14 +30,52 @@ export default function AdminLogsPage() {
     });
   };
 
+  const handleExport = async () => {
+    setExportStatus("loading");
+    setExportError(null);
+    try {
+      const blob = await exportAdminAuditLogsCsv();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Unable to export logs.");
+    } finally {
+      setExportStatus("idle");
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <header className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-2xl font-semibold text-slate-900">Audit log viewer</h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Filter authentication, recovery, and policy events across the admin platform.
-        </p>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900">Audit log viewer</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Filter authentication, recovery, and policy events across the admin platform.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exportStatus === "loading"}
+            className="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {exportStatus === "loading" ? "Exporting..." : "Export CSV"}
+          </button>
+        </div>
       </header>
+
+      {exportError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {exportError}
+        </div>
+      )}
 
       <form
         onSubmit={handleFilter}

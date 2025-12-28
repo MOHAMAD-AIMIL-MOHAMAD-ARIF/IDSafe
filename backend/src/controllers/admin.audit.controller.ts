@@ -217,6 +217,20 @@ async function resolveAuditQuery(req: Request, options: AuditQueryOptions) {
   }
 }
 
+async function resolveAuditFilters(req: Request) {
+  const parsed = auditQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return { error: parsed.error.issues } as const;
+  }
+
+  try {
+    const where = buildAuditLogWhere(parsed.data);
+    return { where } as const;
+  } catch (err) {
+    return { error: [{ message: (err as Error).message }] } as const;
+  }
+}
+
 /**
  * GET /admin/audit-logs
  */
@@ -257,18 +271,16 @@ export async function adminListAuditLogs(req: Request, res: Response) {
  * GET /admin/audit-logs/export
  */
 export async function adminExportAuditLogs(req: Request, res: Response) {
-  const resolved = await resolveAuditQuery(req, { defaultLimit: 1000, maxLimit: 5000 });
+  const resolved = await resolveAuditFilters(req);
   if ("error" in resolved) {
     return res.status(400).json({ error: "Invalid query", issues: resolved.error });
   }
 
-  const { where, take, skip } = resolved;
+  const { where } = resolved;
 
   const logs = await prisma.auditLog.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    take,
-    skip,
     select: {
       logId: true,
       userId: true,
