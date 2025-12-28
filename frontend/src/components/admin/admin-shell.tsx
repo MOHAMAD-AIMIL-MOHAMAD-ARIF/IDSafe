@@ -31,11 +31,11 @@ function navClass(isCurrent: boolean) {
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { status, error } = useAdminSession();
   const isLogin = useMemo(() => {
     if (!pathname) return false;
     return ["/admin/login", "/admin/login/start", "/admin/login/verify-otp"].includes(pathname);
   }, [pathname]);
+  const { status, error } = useAdminSession(isLogin ? null : pathname, { enabled: !isLogin });
 
   useEffect(() => {
     if (!isLogin && status === "unauthenticated") {

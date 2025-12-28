@@ -13,13 +13,30 @@ type AdminSessionState = {
   error: string | null;
 };
 
-export function useAdminSession(refreshKey?: string | number | null): AdminSessionState {
+type AdminSessionOptions = {
+  enabled?: boolean;
+};
+
+export function useAdminSession(
+  refreshKey?: string | number | null,
+  options: AdminSessionOptions = {},
+): AdminSessionState {
   const [status, setStatus] = useState<AdminSessionStatus>("loading");
   const [session, setSession] = useState<AuthSession | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const enabled = options.enabled ?? true;
 
   useEffect(() => {
     let isActive = true;
+
+    if (!enabled) {
+      setStatus("loading");
+      setSession(null);
+      setError(null);
+      return () => {
+        isActive = false;
+      };
+    }
 
     const checkSession = async () => {
       setStatus("loading");
@@ -55,7 +72,7 @@ export function useAdminSession(refreshKey?: string | number | null): AdminSessi
     return () => {
       isActive = false;
     };
-  }, [refreshKey]);
+  }, [enabled, refreshKey]);
 
   return { status, session, error };
 }
