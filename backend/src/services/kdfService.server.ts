@@ -21,6 +21,8 @@ export const KDF_CONFIG_KEYS = {
   hashLenBytes: "kdf.argon2id.hashLenBytes.default",
 } as const;
 
+export const KDF_SALT_SIZE_CONFIG_KEY = "kdf.argon2id.saltSizeBytes.default";
+
 function toInt(value: string | null | undefined, fallback: number): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -64,6 +66,10 @@ export async function getDefaultKdfParams(prisma: PrismaClient): Promise<Omit<Ar
   return { algorithm, timeCost, memoryCostKiB, parallelism, hashLenBytes };
 }
 
+export async function getDefaultKdfSaltSize(prisma: PrismaClient): Promise<number> {
+  return toInt(await getConfigValue(prisma, KDF_SALT_SIZE_CONFIG_KEY), 16);
+}
+
 /**
  * Returns the *effective* KDF params for a user:
  * - defaults from SystemConfig
@@ -76,6 +82,7 @@ export async function getEffectiveUserKdfParams(
   userId: number,
 ): Promise<Argon2idParams> {
   const defaults = await getDefaultKdfParams(prisma);
+  const saltSize = await getDefaultKdfSaltSize(prisma);
 
   const rd = await prisma.recoveryData.findUnique({
     where: { userId },
@@ -90,7 +97,7 @@ export async function getEffectiveUserKdfParams(
 
   // If user doesn't have RecoveryData yet, generate a new salt + defaults.
   if (!rd) {
-    const saltB64 = generateSaltB64();
+    const saltB64 = generateSaltB64(saltSize);
     const params: Argon2idParams = { ...defaults, saltB64 };
     assertParamsSafe(params);
     return params;

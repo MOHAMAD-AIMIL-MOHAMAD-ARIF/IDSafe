@@ -19,6 +19,7 @@ import { adminUsersRouter } from "./routes/admin.users.routes.js";
 import { adminAuditRouter } from "./routes/admin.audit.routes.js";
 import { adminSystemRouter } from "./routes/admin.system.routes.js";
 import { adminDashboardRouter } from "./routes/admin.dashboard.routes.js";
+import { adminConfigRouter } from "./routes/admin.config.routes.js";
 import { recoveryRouter } from "./routes/recovery.routes.js";
 import { vaultEntriesRouter } from "./routes/vault.entries.routes.js";
 import { recordResponse } from "./services/metricsService.js";
@@ -119,6 +120,9 @@ app.use("/admin", adminDashboardRouter);
 
 // Admin audit log search/export
 app.use("/admin/audit-logs", adminAuditRouter);
+
+// Admin config (KDF)
+app.use("/admin/config", adminConfigRouter);
 
 // Admin system config + health
 app.use("/admin/system", adminSystemRouter);

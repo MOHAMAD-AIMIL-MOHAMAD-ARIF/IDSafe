@@ -104,6 +104,11 @@ async function main() {
       configValue: "32",
       description: "Default Argon2id hash length bytes for new users.",
     },
+    {
+      configKey: "kdf.argon2id.saltSizeBytes.default",
+      configValue: "16",
+      description: "Default Argon2id salt size in bytes for new users.",
+    },
 
     // WebAuthn attestation policy controls (admin-configurable) :contentReference[oaicite:14]{index=14}
     {
