@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api";
+import type { AuthSession } from "@/types/auth";
 import type {
   AdminHealthOverview,
   AdminKdfPolicy,
@@ -57,6 +58,10 @@ export async function adminLoginVerifyOtp(
 
 export async function adminLogout(): Promise<{ ok: true }> {
   return apiClient.post<{ ok: true }>("/admin/auth/logout");
+}
+
+export async function fetchAdminSession(): Promise<AuthSession> {
+  return apiClient.get<AuthSession>("/admin/auth/session", { cache: "no-store" });
 }
 
 export async function fetchAdminSummary(): Promise<AdminSummary> {

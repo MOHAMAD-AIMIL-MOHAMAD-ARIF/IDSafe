@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { AuthSession } from "@/types/auth";
-import { fetchSession } from "@/lib/api/auth";
+import { fetchAdminSession } from "@/lib/api/admin";
 import { ApiError } from "@/lib/api/client";
 
 export type AdminSessionStatus = "loading" | "authenticated" | "unauthenticated" | "error";
@@ -26,7 +26,7 @@ export function useAdminSession(refreshKey?: string | number | null): AdminSessi
       setError(null);
 
       try {
-        const response = await fetchSession();
+        const response = await fetchAdminSession();
         if (!isActive) return;
         if (response.role !== "ADMIN") {
           setSession(null);
@@ -38,7 +38,7 @@ export function useAdminSession(refreshKey?: string | number | null): AdminSessi
         setStatus("authenticated");
       } catch (err) {
         if (!isActive) return;
-        if (err instanceof ApiError && err.status === 401) {
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
           setSession(null);
           setStatus("unauthenticated");
           return;

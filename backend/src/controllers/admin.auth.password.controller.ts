@@ -328,3 +328,14 @@ export async function adminLogout(req: Request, res: Response) {
     return res.json({ ok: true });
   });
 }
+
+/**
+ * GET /admin/auth/session
+ */
+export function adminSessionStatus(req: Request, res: Response) {
+  res.setHeader("Cache-Control", "no-store");
+  return res.json({
+    userId: req.session.userId,
+    role: req.session.role ?? "END_USER",
+  });
+}
