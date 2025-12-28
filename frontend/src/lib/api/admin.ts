@@ -128,6 +128,57 @@ export async function updateAdminUserStatus(
   return mapAdminUserFromApi(response.user);
 }
 
+type AdminAuditLogApiEntry = {
+  logId: number | string;
+  eventType: string;
+  createdAt: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  detailsJson?: unknown;
+  subject?: { email?: string | null } | null;
+  actor?: { email?: string | null } | null;
+};
+
+type AdminAuditLogApiResponse = {
+  logs: AdminAuditLogApiEntry[];
+};
+
+function deriveLogLevel(eventType: string): AdminLogEntry["level"] {
+  if (eventType.endsWith(".FAIL") || eventType.endsWith(".FAILURE") || eventType.endsWith(".DENIED")) {
+    return "error";
+  }
+  if (eventType.endsWith(".SUCCESS") || eventType.endsWith(".OK")) {
+    return "info";
+  }
+  return "warn";
+}
+
+function deriveService(eventType: string): string {
+  const [service] = eventType.split(".");
+  return service ?? "SYSTEM";
+}
+
+function describeDetails(details: AdminAuditLogApiEntry["detailsJson"]): string | null {
+  if (!details || typeof details !== "object") return null;
+  const record = details as Record<string, unknown>;
+  const message = typeof record.message === "string" ? record.message : null;
+  const reason = typeof record.reason === "string" ? record.reason : null;
+  if (message && reason) return `${message} (${reason})`;
+  return message ?? reason ?? JSON.stringify(record);
+}
+
+function mapAuditLogEntry(entry: AdminAuditLogApiEntry): AdminLogEntry {
+  const detailsSummary = describeDetails(entry.detailsJson);
+  return {
+    id: String(entry.logId),
+    timestamp: new Date(entry.createdAt).toISOString(),
+    level: deriveLogLevel(entry.eventType),
+    service: deriveService(entry.eventType),
+    message: detailsSummary ? `${entry.eventType} — ${detailsSummary}` : entry.eventType,
+    correlationId: String(entry.logId),
+  };
+}
+
 export async function fetchAdminLogs(filters: AdminLogFilters = {}): Promise<{ logs: AdminLogEntry[] }> {
   const query = toQueryString({
     level: filters.level,
@@ -136,7 +187,8 @@ export async function fetchAdminLogs(filters: AdminLogFilters = {}): Promise<{ l
     to: filters.to,
     query: filters.query,
   });
-  return apiClient.get<{ logs: AdminLogEntry[] }>(`/admin/audit-logs${query}`);
+  const response = await apiClient.get<AdminAuditLogApiResponse>(`/admin/audit-logs${query}`);
+  return { logs: response.logs.map(mapAuditLogEntry) };
 }
 
 export async function fetchKdfPolicy(): Promise<AdminKdfPolicy> {
