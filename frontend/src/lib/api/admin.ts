@@ -92,7 +92,7 @@ export async function fetchAdminLogs(filters: AdminLogFilters = {}): Promise<{ l
     to: filters.to,
     query: filters.query,
   });
-  return apiClient.get<{ logs: AdminLogEntry[] }>(`/admin/logs${query}`);
+  return apiClient.get<{ logs: AdminLogEntry[] }>(`/admin/audit-logs${query}`);
 }
 
 export async function fetchKdfPolicy(): Promise<AdminKdfPolicy> {
