@@ -72,6 +72,28 @@ export type AdminHealthOverview = {
   metrics: AdminMetric[];
 };
 
+export type AdminHealthApiResponse = {
+  status: "ok" | "degraded";
+  database: "ok" | "error";
+  metrics: {
+    since: string;
+    uptimeSeconds: number;
+    requestCount: number;
+    errorCount: number;
+    errorRate: number;
+    statusBuckets: {
+      "2xx": number;
+      "3xx": number;
+      "4xx": number;
+      "5xx": number;
+    };
+  };
+  counts: {
+    users: number;
+    auditLogs: number;
+  };
+};
+
 export type AdminLoginStartResponse = {
   ok: true;
 };

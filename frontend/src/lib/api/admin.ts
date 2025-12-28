@@ -1,6 +1,7 @@
 import { apiClient } from "@/lib/api";
 import type { AuthSession } from "@/types/auth";
 import type {
+  AdminHealthApiResponse,
   AdminHealthOverview,
   AdminKdfPolicy,
   AdminLoginStartResponse,
@@ -220,5 +221,29 @@ export async function updateSessionPolicy(
 }
 
 export async function fetchAdminHealth(): Promise<AdminHealthOverview> {
-  return apiClient.get<AdminHealthOverview>("/admin/health");
+  const response = await apiClient.get<AdminHealthApiResponse>("/admin/system/health");
+
+  const status: AdminHealthOverview["status"] = response.status === "ok" ? "healthy" : "degraded";
+  const databaseStatus: AdminHealthOverview["status"] =
+    response.database === "ok" ? "healthy" : "down";
+
+  return {
+    status,
+    updatedAt: new Date().toLocaleString(),
+    services: [
+      { name: "API", status, latencyMs: null },
+      { name: "Database", status: databaseStatus, latencyMs: null },
+    ],
+    metrics: [
+      { name: "Uptime", value: response.metrics.uptimeSeconds, unit: "s" },
+      { name: "Requests", value: response.metrics.requestCount },
+      { name: "Errors", value: response.metrics.errorCount },
+      { name: "Error rate", value: Number((response.metrics.errorRate * 100).toFixed(2)), unit: "%" },
+      { name: "Users", value: response.counts.users },
+      { name: "Audit logs", value: response.counts.auditLogs },
+      { name: "2xx responses", value: response.metrics.statusBuckets["2xx"] },
+      { name: "4xx responses", value: response.metrics.statusBuckets["4xx"] },
+      { name: "5xx responses", value: response.metrics.statusBuckets["5xx"] },
+    ],
+  };
 }
