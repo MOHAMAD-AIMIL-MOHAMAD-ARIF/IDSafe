@@ -115,7 +115,9 @@ export default function AdminLogsPage() {
                     `${entry.timestamp}-${entry.service}-${entry.level}-${index}`
                   }
                 >
-                  <td className="px-4 py-3 text-slate-600">{entry.timestamp}</td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {new Date(entry.timestamp).toLocaleString()}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
                       {entry.level}
