@@ -108,8 +108,8 @@ export default function AdminUsersPage() {
                 </td>
               </tr>
             ) : (
-              users.map((user) => (
-                <tr key={user.id}>
+              users.map((user, index) => (
+                <tr key={user.id ?? user.email ?? index}>
                   <td className="px-4 py-3">
                     <div className="font-semibold text-slate-900">{user.email}</div>
                     <div className="text-xs text-slate-500">{user.id}</div>
