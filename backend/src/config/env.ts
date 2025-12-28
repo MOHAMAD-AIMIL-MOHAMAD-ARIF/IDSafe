@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { Pool } from "pg";
 
 function req(name: string): string {
   const v = process.env[name];
@@ -20,6 +21,30 @@ function bool(name: string, fallback = false): boolean {
   return raw === "true";
 }
 
+const SESSION_ROTATION_CONFIG_KEY = "session.rotationMinutes";
+const DATABASE_URL = req("DATABASE_URL");
+const FALLBACK_SESSION_MAX_AGE_MS = num("SESSION_MAX_AGE_MS", 30 * 60 * 1000);
+const FALLBACK_SESSION_ROTATION_MINUTES = Math.max(1, Math.trunc(FALLBACK_SESSION_MAX_AGE_MS / 60_000));
+
+async function loadSessionRotationMinutes(): Promise<number> {
+  const pool = new Pool({ connectionString: DATABASE_URL });
+  try {
+    const result = await pool.query(
+      'SELECT "configValue" FROM "SystemConfig" WHERE "configKey" = $1 LIMIT 1',
+      [SESSION_ROTATION_CONFIG_KEY],
+    );
+    const raw = result.rows[0]?.configValue;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? Math.trunc(n) : FALLBACK_SESSION_ROTATION_MINUTES;
+  } catch {
+    return FALLBACK_SESSION_ROTATION_MINUTES;
+  } finally {
+    await pool.end();
+  }
+}
+
+const sessionRotationMinutes = await loadSessionRotationMinutes();
+
 export const env = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   PORT: num("PORT", 4000),
@@ -34,7 +59,7 @@ export const env = {
   // Session
   SESSION_SECRET: req("SESSION_SECRET"),
   SESSION_NAME: process.env.SESSION_NAME ?? "idsafe.sid",
-  SESSION_MAX_AGE_MS: num("SESSION_MAX_AGE_MS", 30 * 60 * 1000),
+  SESSION_MAX_AGE_MS: sessionRotationMinutes * 60 * 1000,
 
   // Behind reverse proxy (Render, Nginx, etc.)
   TRUST_PROXY: bool("TRUST_PROXY", false),
@@ -81,5 +106,5 @@ export const env = {
   WEBAUTHN_EXPECTED_ORIGIN: process.env.WEBAUTHN_EXPECTED_ORIGIN ?? req("FRONTEND_ORIGIN"),
 
   // DB URL (used for Prisma + session store)
-  DATABASE_URL: req("DATABASE_URL"),
+  DATABASE_URL,
 };
