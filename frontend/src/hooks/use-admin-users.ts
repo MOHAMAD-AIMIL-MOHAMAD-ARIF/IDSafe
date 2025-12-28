@@ -35,7 +35,9 @@ export function useAdminUsers() {
   const updateStatus = useCallback(async (userId: string, statusValue: AdminUser["status"]) => {
     setErrorMessage(null);
     const updated = await updateAdminUserStatus(userId, statusValue);
-    setUsers((prev) => prev.map((user) => (user.id === userId ? updated : user)));
+    setUsers((prev) =>
+      prev.map((user) => (user.id === userId ? { ...user, ...updated } : user)),
+    );
     return updated;
   }, []);
 

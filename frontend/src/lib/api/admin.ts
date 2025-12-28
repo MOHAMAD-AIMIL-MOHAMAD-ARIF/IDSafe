@@ -72,16 +72,60 @@ export async function fetchAdminRecoveryEvents(): Promise<{ events: AdminRecover
   return apiClient.get<{ events: AdminRecoveryEvent[] }>("/admin/recovery-events");
 }
 
+type ApiUserStatus = "ACTIVE" | "LOCKED" | "DEACTIVATED";
+
+type AdminUserApiResponse = {
+  userId: number;
+  email: string;
+  status: ApiUserStatus;
+  registrationDate?: string | null;
+  lastLoginAt?: string | null;
+  activeCredentialCount?: number | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+const statusToApi: Record<AdminUser["status"], ApiUserStatus> = {
+  active: "ACTIVE",
+  locked: "LOCKED",
+  suspended: "DEACTIVATED",
+};
+
+const statusFromApi: Record<ApiUserStatus, AdminUser["status"]> = {
+  ACTIVE: "active",
+  LOCKED: "locked",
+  DEACTIVATED: "suspended",
+};
+
+function mapAdminUserFromApi(payload: AdminUserApiResponse): AdminUser {
+  return {
+    id: String(payload.userId),
+    email: payload.email,
+    status: statusFromApi[payload.status],
+    createdAt: payload.registrationDate ?? payload.createdAt ?? undefined,
+    lastActiveAt: payload.lastLoginAt ?? undefined,
+    recoveryEnabled:
+      payload.activeCredentialCount === null || payload.activeCredentialCount === undefined
+        ? undefined
+        : payload.activeCredentialCount > 0,
+  };
+}
+
 export async function listAdminUsers(params: AdminUserQuery = {}): Promise<{ users: AdminUser[] }> {
   const query = toQueryString({ query: params.query, status: params.status });
-  return apiClient.get<{ users: AdminUser[] }>(`/admin/users${query}`);
+  const response = await apiClient.get<{ users: AdminUserApiResponse[] }>(`/admin/users${query}`);
+  return { users: response.users.map(mapAdminUserFromApi) };
 }
 
 export async function updateAdminUserStatus(
   userId: string,
   status: AdminUser["status"],
 ): Promise<AdminUser> {
-  return apiClient.patch<AdminUser>(`/admin/users/${userId}`, { status });
+  const response = await apiClient.patch<{ user: AdminUserApiResponse }>(
+    `/admin/users/${userId}/status`,
+    { status: statusToApi[status] },
+  );
+  return mapAdminUserFromApi(response.user);
 }
 
 export async function fetchAdminLogs(filters: AdminLogFilters = {}): Promise<{ logs: AdminLogEntry[] }> {
