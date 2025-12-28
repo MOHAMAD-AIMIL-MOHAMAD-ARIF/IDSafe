@@ -51,7 +51,7 @@ export class ApiClient {
   }
 
   private async request<T>(
-    method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
+    method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE" | "OPTIONS",
     path: string,
     body?: unknown,
     options: ApiRequestOptions = {},
@@ -114,7 +114,10 @@ export class ApiClient {
     return this.request<T>("PUT", path, body, options);
   }
 
-  
+  async options<T>(path: string, options?: ApiRequestOptions): Promise<T> {
+    return this.request<T>("OPTIONS", path, undefined, options);
+  }
+
   // If an endpoint returns 204, your parseJson already returns undefined as T, so T=void works fine.
   // If an endpoint returns JSON like { ok: true; credentialId: number }, you can type it with <T>.
   async delete<T = void>(path: string, options?: ApiRequestOptions): Promise<T> {

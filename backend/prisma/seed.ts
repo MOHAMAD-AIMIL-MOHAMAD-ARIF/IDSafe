@@ -145,7 +145,7 @@ async function main() {
     },
     {
       configKey: "email.smtp.host",
-      configValue: "smtp.example.com",
+      configValue: "smtp.gmail.com",
       description: "SMTP host for recovery magic link emails.",
     },
     {
@@ -155,7 +155,7 @@ async function main() {
     },
     {
       configKey: "email.smtp.user",
-      configValue: "CHANGE_ME",
+      configValue: "maimilmarifutm01@gmail.com",
       description: "SMTP username.",
     },
     {
@@ -165,7 +165,7 @@ async function main() {
     },
     {
       configKey: "email.fromAddress",
-      configValue: "no-reply@idsafe.local",
+      configValue: "IDSafe maimilmarifutm01@gmail.com",
       description: "From address used for outbound email.",
     },
   ];

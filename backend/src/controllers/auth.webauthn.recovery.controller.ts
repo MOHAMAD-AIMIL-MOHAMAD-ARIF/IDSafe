@@ -214,6 +214,10 @@ export const recoveryRegisterFinish = [
     const attestationFormat: string =
       (registrationInfo as any).fmt ?? (registrationInfo as any).attestationFormat ?? "unknown";
 
+    // Clear the challenge ASAP (best-effort one-time use)
+    // This reduces duplicate "finish" calls racing through.
+    (recovery as any).webauthnChallenge = undefined;
+
     const now = new Date();
 
     try {

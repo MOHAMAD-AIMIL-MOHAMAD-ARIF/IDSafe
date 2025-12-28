@@ -1,10 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const navItems = [
   { label: "Login", href: "/login" },
   { label: "Register", href: "/register" },
-  { label: "Vault", href: "/vault" },
-  { label: "Account", href: "/account" },
   { label: "Admin", href: "/admin" },
 ];
 
@@ -12,8 +11,15 @@ export function SiteHeader() {
   return (
     <header className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white/80 px-6 py-4 backdrop-blur">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-sm font-semibold text-white">
-          ID
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand">
+          <Image
+            src="/logo.png"
+            alt="IDSafe logo"
+            width={32}
+            height={32}
+            className="h-8 w-8 object-contain"
+            priority
+          />
         </span>
         <div>
           <p className="text-sm font-semibold">IDSafe</p>

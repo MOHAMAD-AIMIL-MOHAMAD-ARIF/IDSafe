@@ -87,8 +87,12 @@ export default function RecoveryPage() {
               <div className="flex flex-col gap-3 text-sm text-slate-600">
                 <p className="font-semibold text-slate-900">Recovery checklist</p>
                 <ul className="list-disc space-y-2 pl-5">
+                  <li>
+                    IMPORTANT: You can ignore "Register a new passkey" step error
+                    <br />
+                    if this device already has a passkey registered. You can go straight to re-login.
+                  </li>
                   <li>Have your recovery passphrase available.</li>
-                  <li>Keep this device ready for passkey registration.</li>
                   <li>Complete the recovery steps to bind a new device key.</li>
                 </ul>
               </div>

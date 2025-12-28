@@ -319,13 +319,13 @@ export default function AccountPage() {
                           Last used {formatDate(cred.lastUsedAt)} • Sign count {cred.signCount}
                         </p>
                       </div>
-                      <button
+                      {/* <button
                         type="button"
                         onClick={() => void handleDeleteCredential(cred.credentialId)}
                         className="text-xs font-semibold text-red-600 hover:text-red-700"
                       >
                         Remove
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 ))}
