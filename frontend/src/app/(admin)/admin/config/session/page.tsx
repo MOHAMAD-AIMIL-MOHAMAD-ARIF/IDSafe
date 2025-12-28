@@ -7,8 +7,8 @@ import { useAdminConfig } from "@/hooks/use-admin-config";
 export default function AdminSessionConfigPage() {
   const { policy, status, errorMessage, successMessage, loadPolicy, savePolicy } = useAdminConfig("session");
   const [idleTimeoutMinutes, setIdleTimeoutMinutes] = useState(15);
-  const [maxSessionHours, setMaxSessionHours] = useState(12);
-  const [mfaRequired, setMfaRequired] = useState(false);
+  //const [maxSessionHours, setMaxSessionHours] = useState(12);
+  //const [mfaRequired, setMfaRequired] = useState(false);
   const [sessionRotationMinutes, setSessionRotationMinutes] = useState(30);
 
   useEffect(() => {
@@ -18,8 +18,8 @@ export default function AdminSessionConfigPage() {
   useEffect(() => {
     if (!policy) return;
     setIdleTimeoutMinutes(policy.idleTimeoutMinutes);
-    setMaxSessionHours(policy.maxSessionHours);
-    setMfaRequired(policy.mfaRequired);
+    //setMaxSessionHours(policy.maxSessionHours);
+    //setMfaRequired(policy.mfaRequired);
     setSessionRotationMinutes(policy.sessionRotationMinutes);
   }, [policy]);
 
@@ -27,8 +27,8 @@ export default function AdminSessionConfigPage() {
     event.preventDefault();
     await savePolicy({
       idleTimeoutMinutes,
-      maxSessionHours,
-      mfaRequired,
+      //maxSessionHours,
+      //mfaRequired,
       sessionRotationMinutes,
     });
   };

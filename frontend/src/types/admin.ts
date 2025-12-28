@@ -48,8 +48,8 @@ export type AdminWebAuthnPolicy = {
 
 export type AdminSessionPolicy = {
   idleTimeoutMinutes: number;
-  maxSessionHours: number;
-  mfaRequired: boolean;
+  //maxSessionHours: number;
+  //mfaRequired: boolean;
   sessionRotationMinutes: number;
 };
 
