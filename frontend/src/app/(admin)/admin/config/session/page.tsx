@@ -5,8 +5,7 @@ import { useEffect, useState } from "react";
 import { useAdminConfig } from "@/hooks/use-admin-config";
 
 export default function AdminSessionConfigPage() {
-  const { policy, status, errorMessage, successMessage, loadPolicy, savePolicy } =
-    useAdminConfig("session");
+  const { policy, status, errorMessage, successMessage, loadPolicy, savePolicy } = useAdminConfig("session");
   const [idleTimeoutMinutes, setIdleTimeoutMinutes] = useState(15);
   const [maxSessionHours, setMaxSessionHours] = useState(12);
   const [mfaRequired, setMfaRequired] = useState(false);
@@ -58,7 +57,7 @@ export default function AdminSessionConfigPage() {
               className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm"
             />
           </label>
-          <label className="text-sm font-semibold text-slate-700">
+          {/* <label className="text-sm font-semibold text-slate-700">
             Max session length (hours)
             <input
               type="number"
@@ -67,7 +66,7 @@ export default function AdminSessionConfigPage() {
               onChange={(event) => setMaxSessionHours(Number(event.target.value))}
               className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm"
             />
-          </label>
+          </label> */}
           <label className="text-sm font-semibold text-slate-700">
             Session rotation (minutes)
             <input
@@ -77,15 +76,6 @@ export default function AdminSessionConfigPage() {
               onChange={(event) => setSessionRotationMinutes(Number(event.target.value))}
               className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm"
             />
-          </label>
-          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              checked={mfaRequired}
-              onChange={(event) => setMfaRequired(event.target.checked)}
-              className="h-4 w-4"
-            />
-            Require MFA for admin sessions
           </label>
         </div>
 
