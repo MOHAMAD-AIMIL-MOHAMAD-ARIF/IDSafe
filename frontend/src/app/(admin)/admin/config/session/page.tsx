@@ -38,7 +38,7 @@ export default function AdminSessionConfigPage() {
       <header className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-2xl font-semibold text-slate-900">Session policy</h2>
         <p className="mt-2 text-sm text-slate-600">
-          Define session timeouts and rotation cadence.
+          Define session rotation cadence.
         </p>
       </header>
 
@@ -47,7 +47,7 @@ export default function AdminSessionConfigPage() {
         className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-sm font-semibold text-slate-700">
+          {/* <label className="text-sm font-semibold text-slate-700">
             Idle timeout (minutes)
             <input
               type="number"
@@ -56,7 +56,7 @@ export default function AdminSessionConfigPage() {
               onChange={(event) => setIdleTimeoutMinutes(Number(event.target.value))}
               className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-2 text-sm"
             />
-          </label>
+          </label> */}
           {/* <label className="text-sm font-semibold text-slate-700">
             Max session length (hours)
             <input
