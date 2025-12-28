@@ -6,6 +6,7 @@ import { Prisma } from "../generated/prisma/client.js";
 import { auditFromReq } from "../services/auditLogService.js";
 import { requireRecoverySession } from "../middleware/auth.js";
 import { generateRegistrationOptions, verifyRegistrationResponse } from "@simplewebauthn/server";
+import { getWebAuthnPolicy } from "../services/webauthnPolicyService.js";
 
 // Avoid forcing @simplewebauthn/types install: accept unknown and validate shape at runtime
 type RegistrationResponseJSON = any;
@@ -76,7 +77,8 @@ export const recoveryRegisterStart = [
       return res.status(403).json({ error: "Account is not active" });
     }
 
-    const { rpID, rpName } = getWebAuthnEnv();
+    const { rpName } = getWebAuthnEnv();
+    const policy = await getWebAuthnPolicy(prisma);
 
     // Exclude active credentials (should be 0 if you deactivated them on recovery)
     const existingCreds = await prisma.webauthnCredential.findMany({
@@ -91,16 +93,17 @@ export const recoveryRegisterStart = [
 
     const options = await generateRegistrationOptions({
       rpName,
-      rpID,
+      rpID: policy.rpId,
       userID: userIdToUserHandle(user.userId),
       userName: user.email,
       userDisplayName: user.email,
-      attestationType: "none",
+      attestationType: policy.attestation,
       excludeCredentials,
       authenticatorSelection: {
-        residentKey: "preferred",
-        userVerification: "preferred",
+        residentKey: policy.residentKey,
+        userVerification: policy.userVerification,
       },
+      timeout: policy.timeoutMs,
     });
 
     // store challenge inside recovery session
@@ -171,15 +174,16 @@ export const recoveryRegisterFinish = [
       return res.status(403).json({ error: "Account is not active" });
     }
 
-    const { rpID, expectedOrigin } = getWebAuthnEnv();
+    const { expectedOrigin } = getWebAuthnEnv();
+    const policy = await getWebAuthnPolicy(prisma);
 
     let verification: any;
     try {
       verification = await verifyRegistrationResponse({
         response: parsed.data.credential,
         expectedChallenge: challenge,
-        expectedOrigin,
-        expectedRPID: rpID,
+      expectedOrigin,
+      expectedRPID: policy.rpId,
         requireUserVerification: false,
       });
     } catch {

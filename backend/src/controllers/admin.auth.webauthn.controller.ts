@@ -12,6 +12,7 @@ import { Buffer } from "node:buffer";
 import { prisma } from "../db.js";
 import { auditFromReq } from "../services/auditLogService.js";
 import { bufToB64url } from "../utils/base64url.js";
+import { getWebAuthnPolicy } from "../services/webauthnPolicyService.js";
 
 const registerStartSchema = z.object({
   email: z.email(),
@@ -88,7 +89,8 @@ export async function adminRegisterStart(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
   }
 
-  const { rpID, rpName } = getWebAuthnEnv();
+  const { rpName } = getWebAuthnEnv();
+  const policy = await getWebAuthnPolicy(prisma);
   const email = parsed.data.email.toLowerCase().trim();
 
   const user = await prisma.user.findUnique({
@@ -128,16 +130,17 @@ export async function adminRegisterStart(req: Request, res: Response) {
 
   const options: PublicKeyCredentialCreationOptionsJSON = await generateRegistrationOptions({
     rpName,
-    rpID,
+    rpID: policy.rpId,
     userID: userIdToUserHandle(user.userId),
     userName: email,
     userDisplayName: email,
-    attestationType: "none",
+    attestationType: policy.attestation,
     excludeCredentials,
     authenticatorSelection: {
-      residentKey: "preferred",
-      userVerification: "preferred",
+      residentKey: policy.residentKey,
+      userVerification: policy.userVerification,
     },
+    timeout: policy.timeoutMs,
   });
 
   req.session.adminWebauthnReg = {
@@ -173,7 +176,8 @@ export async function adminRegisterFinish(req: Request, res: Response) {
     return res.status(400).json({ error: "No pending admin WebAuthn registration" });
   }
 
-  const { rpID, expectedOrigin } = getWebAuthnEnv();
+  const { expectedOrigin } = getWebAuthnEnv();
+  const policy = await getWebAuthnPolicy(prisma);
 
   const user = await prisma.user.findUnique({
     where: { userId: reg.userId },
@@ -198,7 +202,7 @@ export async function adminRegisterFinish(req: Request, res: Response) {
       response: parsed.data.credential as any,
       expectedChallenge: reg.challenge,
       expectedOrigin,
-      expectedRPID: rpID,
+      expectedRPID: policy.rpId,
       requireUserVerification: false,
     });
   } catch (e) {
@@ -292,7 +296,7 @@ export async function adminLoginStart(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
   }
 
-  const { rpID } = getWebAuthnEnv();
+  const policy = await getWebAuthnPolicy(prisma);
   const email = parsed.data.email.toLowerCase().trim();
 
   const user = await prisma.user.findUnique({
@@ -333,9 +337,10 @@ export async function adminLoginStart(req: Request, res: Response) {
   }));
 
   const options = await generateAuthenticationOptions({
-    rpID,
+    rpID: policy.rpId,
     allowCredentials,
-    userVerification: "preferred",
+    userVerification: policy.userVerification,
+    timeout: policy.timeoutMs,
   });
 
   req.session.adminWebauthnLogin = {
@@ -370,7 +375,8 @@ export async function adminLoginFinish(req: Request, res: Response) {
     return res.status(400).json({ error: "No pending admin WebAuthn login" });
   }
 
-  const { rpID, expectedOrigin } = getWebAuthnEnv();
+  const { expectedOrigin } = getWebAuthnEnv();
+  const policy = await getWebAuthnPolicy(prisma);
 
   const user = await prisma.user.findUnique({
     where: { userId: pending.userId },
@@ -421,7 +427,7 @@ export async function adminLoginFinish(req: Request, res: Response) {
       response: credential,
       expectedChallenge: pending.challenge,
       expectedOrigin,
-      expectedRPID: rpID,
+      expectedRPID: policy.rpId,
       credential: {
         id: credRow.externalCredentialId,
         publicKey: b64urlToU8(credRow.publicKey),

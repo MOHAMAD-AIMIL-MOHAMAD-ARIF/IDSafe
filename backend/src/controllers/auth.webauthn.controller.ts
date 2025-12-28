@@ -12,6 +12,7 @@ import {
 import { auditFromReq } from "../services/auditLogService.js";
 import { bufToB64url } from "../utils/base64url.js";
 import { Buffer } from "node:buffer";
+import { getWebAuthnPolicy } from "../services/webauthnPolicyService.js";
 
 const registerStartSchema = z.object({
   email: z.email(),
@@ -100,7 +101,8 @@ export async function registerStart(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid payload", issues: parsed.error.issues });
   }
 
-  const { rpID, rpName } = getWebAuthnEnv();
+  const { rpName } = getWebAuthnEnv();
+  const policy = await getWebAuthnPolicy(prisma);
   const email = parsed.data.email.toLowerCase().trim();
 
   // Find or create user
@@ -150,16 +152,17 @@ export async function registerStart(req: Request, res: Response) {
   // Generate WebAuthn registration options
   const options: PublicKeyCredentialCreationOptionsJSON = await generateRegistrationOptions({
     rpName,
-    rpID,
+    rpID: policy.rpId,
     userID: userIdToUserHandle(user.userId), // stable user handle; could also be random bytes stored on user
     userName: email,
     userDisplayName: email,
-    attestationType: "none", // you can later load this from SystemConfig
+    attestationType: policy.attestation,
     excludeCredentials,
     authenticatorSelection: {
-      residentKey: "preferred",
-      userVerification: "preferred",
+      residentKey: policy.residentKey,
+      userVerification: policy.userVerification,
     },
+    timeout: policy.timeoutMs,
   });
 
   // Store challenge in session (critical)
@@ -200,7 +203,8 @@ export async function registerFinish(req: Request, res: Response) {
     return res.status(400).json({ error: "No pending WebAuthn registration (missing challenge)" });
   }
 
-  const { rpID, expectedOrigin } = getWebAuthnEnv();
+  const { expectedOrigin } = getWebAuthnEnv();
+  const policy = await getWebAuthnPolicy(prisma);
 
   const user = await prisma.user.findUnique({
     where: { userId: reg.userId },
@@ -230,8 +234,8 @@ export async function registerFinish(req: Request, res: Response) {
     verification = await verifyRegistrationResponse({
       response: credential as any,
       expectedChallenge: reg.challenge,
-      expectedOrigin,
-      expectedRPID: rpID,
+    expectedOrigin,
+    expectedRPID: policy.rpId,
       requireUserVerification: false, // set true if you want to enforce UV
     });
   } catch (e) {
@@ -349,7 +353,7 @@ export async function loginStart(req: Request, res: Response) {
     return res.status(400).json({ error: "Invalid payload", issues: body.error.issues });
   }
 
-  const { rpID } = getWebAuthnEnv();
+  const policy = await getWebAuthnPolicy(prisma);
   const email = body.data.email;
 
   const user = await prisma.user.findUnique({
@@ -395,10 +399,10 @@ export async function loginStart(req: Request, res: Response) {
   }));
 
   const options = await generateAuthenticationOptions({
-    rpID,
+    rpID: policy.rpId,
     allowCredentials,
-    userVerification: "preferred",
-    // timeout: 60000, // optional
+    userVerification: policy.userVerification,
+    timeout: policy.timeoutMs,
   });
 
   // Save challenge + userId for finish
@@ -434,7 +438,8 @@ export async function loginFinish(req: Request, res: Response) {
     return res.status(400).json({ error: "No pending WebAuthn login (missing challenge)" });
   }
 
-  const { rpID, expectedOrigin } = getWebAuthnEnv();
+  const { expectedOrigin } = getWebAuthnEnv();
+  const policy = await getWebAuthnPolicy(prisma);
 
   const user = await prisma.user.findUnique({
     where: { userId: pending.userId },
@@ -492,8 +497,8 @@ export async function loginFinish(req: Request, res: Response) {
     verification = await verifyAuthenticationResponse({
       response: credential, // AuthenticationResponseJSON
       expectedChallenge: pending.challenge,
-      expectedOrigin,
-      expectedRPID: rpID,
+    expectedOrigin,
+    expectedRPID: policy.rpId,
       credential: {
         id: credRow.externalCredentialId,          // Uint8Array
         publicKey: b64urlToU8(credRow.publicKey),              // Uint8Array
