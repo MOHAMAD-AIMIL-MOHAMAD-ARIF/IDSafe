@@ -236,7 +236,7 @@ export default function VaultPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand/90"
+                  className="rounded-full bg-blue-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
                 >
                   New entry
                 </button>
@@ -539,7 +539,7 @@ export default function VaultPage() {
                   <button
                     type="button"
                     onClick={generator.generate}
-                    className="rounded-full bg-brand px-4 py-2 text-xs font-semibold text-white shadow-sm"
+                    className="rounded-full bg-blue-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800"
                   >
                     Generate
                   </button>
