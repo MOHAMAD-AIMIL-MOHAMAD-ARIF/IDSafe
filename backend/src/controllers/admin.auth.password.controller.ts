@@ -148,6 +148,8 @@ export async function adminPasswordLoginStart(req: Request, res: Response) {
   }
 
   const otpCode = generateOtpCode();
+  // PM2 logs (temporary for demo) purposes
+  console.log(`[DEV_OTP] admin=${user.email} otp=${otpCode}`);
   const tokenHash = hashOtp(user.userId, otpCode);
   const expiresAt = new Date(now.getTime() + env.ADMIN_OTP_TTL_MS);
 

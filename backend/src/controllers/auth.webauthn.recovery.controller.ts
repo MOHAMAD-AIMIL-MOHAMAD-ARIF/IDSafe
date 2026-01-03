@@ -47,6 +47,38 @@ export function zodIssuesToPrismaJson(issues: z.core.$ZodIssue[]): Prisma.InputJ
   }));
 }
 
+function toBase64Url(input: unknown): string {
+  if (typeof input === "string") return input;
+
+  // Buffer (Node)
+  if (Buffer.isBuffer(input)) {
+    return input
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+  }
+
+  // Uint8Array / ArrayBuffer
+  if (input instanceof Uint8Array) {
+    return Buffer.from(input)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+  }
+  if (input instanceof ArrayBuffer) {
+    return Buffer.from(new Uint8Array(input))
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+  }
+
+  throw new Error(`publicKey must be Buffer/Uint8Array/string, got: ${typeof input}`);
+}
+
+
 /**
  * POST /auth/webauthn/recovery/register/start
  * Requires: requireRecoverySession
@@ -219,29 +251,60 @@ export const recoveryRegisterFinish = [
     (recovery as any).webauthnChallenge = undefined;
 
     const now = new Date();
+    const publicKeyString = toBase64Url(publicKey);
 
     try {
       await prisma.webauthnCredential.create({
         data: {
           userId,
           externalCredentialId,
-          publicKey,
+          publicKey: publicKeyString,
           aaguid,
           attestationFormat,
           signCount,
           isActive: true,
-          createdAt: now,
           lastUsedAt: null,
         },
       });
-    } catch {
+    } catch (e) {
+      // Log the real reason in audit (without sensitive data)
+      const details: any = { reason: "DB_INSERT_FAILED" };
+
+      if (e instanceof Prisma.PrismaClientKnownRequestError) {
+        details.prismaCode = e.code;
+
+        if (e.code === "P2002") {
+          // Unique constraint failed
+          await auditFromReq(prisma, req, {
+            userId,
+            actorId: userId,
+            eventType: "WEBAUTHN.RECOVERY.REGISTER.FINISH.FAIL",
+            detailsJson: { ...details, reason: "DUPLICATE_CREDENTIAL" },
+          });
+          return res.status(409).json({ error: "Credential already exists" });
+        }
+
+        if (e.code === "P2003") {
+          // Foreign key constraint failed
+          await auditFromReq(prisma, req, {
+            userId,
+            actorId: userId,
+            eventType: "WEBAUTHN.RECOVERY.REGISTER.FINISH.FAIL",
+            detailsJson: { ...details, reason: "INVALID_USER_ID" },
+          });
+          return res.status(400).json({ error: "Invalid userId (FK failed)" });
+        }
+      }
+
       await auditFromReq(prisma, req, {
         userId,
         actorId: userId,
         eventType: "WEBAUTHN.RECOVERY.REGISTER.FINISH.FAIL",
-        detailsJson: { reason: "DB_INSERT_FAILED" },
+        detailsJson: details,
       });
-      return res.status(409).json({ error: "Credential already exists" });
+
+      // Don’t mask unknown DB problems as “already exists”
+      return res.status(500).json({ error: "Failed to save credential" });
     }
 
     await auditFromReq(prisma, req, {

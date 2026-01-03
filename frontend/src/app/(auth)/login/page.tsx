@@ -78,6 +78,9 @@ export default function LoginPage() {
               <Link href={routes.register} className="text-slate-500 hover:text-slate-700">
                 Create an account
               </Link>
+              <Link href={routes.recoveryRequest} className="text-slate-500 hover:text-slate-700">
+                Recover your account
+              </Link>
             </div>
           </form>
         </section>

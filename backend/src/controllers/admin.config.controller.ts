@@ -22,12 +22,12 @@ const kdfPolicySchema = z.object({
 });
 
 const SESSION_POLICY_KEYS = {
-  idleTimeoutMinutes: "session.idleTimeoutMinutes",
+  //idleTimeoutMinutes: "session.idleTimeoutMinutes",
   sessionRotationMinutes: "session.rotationMinutes",
 } as const;
 
 const sessionPolicySchema = z.object({
-  idleTimeoutMinutes: z.number().int().min(5).max(1440).optional(),
+  //idleTimeoutMinutes: z.number().int().min(5).max(1440).optional(),
   sessionRotationMinutes: z.number().int().min(5).max(1440).optional(),
 });
 
@@ -124,7 +124,7 @@ export async function adminGetSessionPolicy(_req: Request, res: Response) {
   const map = new Map(rows.map((row) => [row.configKey, row.configValue]));
 
   return res.json({
-    idleTimeoutMinutes: toInt(map.get(SESSION_POLICY_KEYS.idleTimeoutMinutes), 15),
+    //idleTimeoutMinutes: toInt(map.get(SESSION_POLICY_KEYS.idleTimeoutMinutes), 15),
     sessionRotationMinutes: toInt(map.get(SESSION_POLICY_KEYS.sessionRotationMinutes), 30),
   });
 }
@@ -143,7 +143,7 @@ export async function adminUpdateSessionPolicy(req: Request, res: Response) {
   const updates: Array<Promise<unknown>> = [];
   const data = parsed.data;
 
-  if (data.idleTimeoutMinutes !== undefined) {
+  /* if (data.idleTimeoutMinutes !== undefined) {
     updates.push(
       upsertConfig(
         adminUserId,
@@ -151,7 +151,7 @@ export async function adminUpdateSessionPolicy(req: Request, res: Response) {
         String(data.idleTimeoutMinutes),
       ),
     );
-  }
+  } */
 
   if (data.sessionRotationMinutes !== undefined) {
     updates.push(

@@ -25,13 +25,13 @@ export async function sendRecoveryEmail(to: string, verifyUrl: string) {
 
   const subject = "IDSafe account recovery";
   const text =
-    `Use this link to continue your IDSafe recovery:\n\n${verifyUrl}\n\n` +
-    `This link will expire soon. If you didn’t request this, ignore this email.`;
+    `Use this to continue your IDSafe recovery:\n\n${verifyUrl}\n\n` +
+    `This link will expire in 5 minutes. If you didn’t request this, you can ignore this email.`;
 
   const html = `
-    <p>Use this link to continue your IDSafe recovery:</p>
+    <p>Use this to continue your IDSafe recovery:</p>
     <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-    <p>This link will expire soon. If you didn’t request this, ignore this email.</p>
+    <p>This link will expire in 5 minutes. If you didn’t request this, ignore this email.</p>
   `;
 
   await transporter.sendMail({ from: EMAIL_FROM, to, subject, text, html });

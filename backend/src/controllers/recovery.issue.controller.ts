@@ -91,6 +91,8 @@ export async function requestRecoveryMagicLink(req: Request, res: Response) {
   });
 
   const verifyUrl = `${BACKEND_ORIGIN}/recovery/verify?token=${encodeURIComponent(rawToken)}`;
+  // PM2 logs (temporary for demo) purposes
+  console.log(`[DEV_RECOVERY] email=${email} verifyUrl=${verifyUrl}`);
 
   try {
     await sendRecoveryEmail(email, verifyUrl);
