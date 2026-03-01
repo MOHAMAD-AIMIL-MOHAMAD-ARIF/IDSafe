@@ -81,6 +81,9 @@ export default function LoginPage() {
               <Link href={routes.recoveryRequest} className="text-slate-500 hover:text-slate-700">
                 Recover your account
               </Link>
+              <Link href={routes.recoveryRequest} className="text-slate-500 hover:text-slate-700">
+                Add new device
+              </Link>
             </div>
           </form>
         </section>

@@ -25,13 +25,17 @@ export async function sendRecoveryEmail(to: string, verifyUrl: string) {
 
   const subject = "IDSafe account recovery";
   const text =
-    `Use this to continue your IDSafe recovery:\n\n${verifyUrl}\n\n` +
-    `This link will expire in 5 minutes. If you didn’t request this, you can ignore this email.`;
+    `We received a request to recover your IDSafe account.\n` +
+    `Use the link below to continue the recovery process:\n\n${verifyUrl}\n\n` +
+    `This link will expire in 5 minutes. If you did not request account recovery, you can safely ignore this email.\n\n` +
+    `This is an automated security message from IDSafe. No reply is required.`;
 
   const html = `
-    <p>Use this to continue your IDSafe recovery:</p>
+    <p>We received a request to recover your IDSafe account.</p>
+    <p>Use the link below to continue the recovery process:</p>
     <p><a href="${verifyUrl}">${verifyUrl}</a></p>
-    <p>This link will expire in 5 minutes. If you didn’t request this, ignore this email.</p>
+    <p>This link will expire in 5 minutes. If you did not request account recovery, you can safely ignore this email.</p>
+    <p>This is an automated security message from IDSafe. No reply is required.</p>
   `;
 
   await transporter.sendMail({ from: EMAIL_FROM, to, subject, text, html });
