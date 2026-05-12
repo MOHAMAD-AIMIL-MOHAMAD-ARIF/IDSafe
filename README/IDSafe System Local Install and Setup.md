@@ -7,7 +7,7 @@ cd idsafe
 
 ## 2. Renaming Environment Files
 Please rename these files before running the system:
-1. "C:\\...\IDSafe\backend\.env(sample-for-local-development).txt"
+1. "C:\\...\IDSafe\backend\\.env(sample-for-local-development).txt"
 2. "C:\\...\IDSafe\frontend\env.local(sample).txt"
 
 ## 3. Setup (Backend)
