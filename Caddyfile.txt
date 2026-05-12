@@ -1,0 +1,64 @@
+idsafe.it.com {
+    encode gzip
+
+    #(Frontends)
+    @recovery_page {
+        method GET
+        path /recovery /recovery/request
+    }
+    @admin_users_page {
+ 	method GET
+ 	path /admin/users/page
+    }
+    @admin_config_pages {
+ 	method GET
+ 	path /admin/config/kdf/page /admin/config/session/page
+    }
+
+    #(Backends)
+    @recovery_api {
+        method POST
+        path /recovery/request /recovery/data /recovery/bind
+    }
+    @recovery_verify {
+ 	method GET
+ 	path /recovery/verify* /recovery/params
+    }
+    @admin_users {
+ 	method GET
+ 	path /admin/users
+    }
+    @admin_users_patch {
+ 	method PATCH
+ 	path /admin/users/*
+    }
+    @admin_users_post {
+ 	method POST
+ 	path /admin/users/*
+    }
+    @admin_config_get {
+ 	method GET
+ 	path /admin/config/kdf /admin/config/session
+    }
+    @admin_config_put {
+ 	method PUT
+ 	path /admin/config/kdf /admin/config/session
+    }
+    @backend {
+        path /auth/* /vault/entries* /admin/auth/* /admin/summary /admin/recovery-events /admin/audit-logs /admin/audit-logs/export /admin/system/* /health
+    }
+
+    reverse_proxy @recovery_api localhost:4000
+    reverse_proxy @recovery_verify localhost:4000
+    reverse_proxy @admin_users localhost:4000
+    reverse_proxy @admin_users_patch localhost:4000
+    reverse_proxy @admin_users_post localhost:4000
+    reverse_proxy @admin_config_get localhost:4000
+    reverse_proxy @admin_config_put localhost:4000
+    reverse_proxy @backend localhost:4000
+    reverse_proxy @recovery_page localhost:3000
+    reverse_proxy @admin_users_page localhost:3000
+    reverse_proxy @admin_config_pages localhost:3000
+    reverse_proxy localhost:3000
+}
+
