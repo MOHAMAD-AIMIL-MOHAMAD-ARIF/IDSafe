@@ -1,0 +1,52 @@
+# Rename this file to: .env
+DATABASE_URL="postgresql://idsafe_user:yourDBPasswordHere@localhost:5432/idsafe_db?schema=public"                                                                                                                                                   
+
+NODE_ENV=production                                                                                                     
+BACKEND_ORIGIN=https://idsafe.it.com                                                                                    
+FRONTEND_ORIGIN=https://idsafe.it.com                                                                                                                                                                                                           
+
+TRUST_PROXY=true                                                                                                        
+FORCE_HTTPS=true                                                                                                        
+COOKIE_SECURE=true                                                                                                      
+COOKIE_SAMESITE=lax                                                                                                                                                                                                                             
+
+SESSION_SECRET=replace-with-your-long-random-secret                                         
+SESSION_NAME=idsafe.sid                                                                                                                                                                                                                         
+
+# Rate limiting                                                                                                         
+RL_AUTH_WINDOW_MS=600000                                                                                                
+RL_AUTH_MAX=5                                                                                                         
+RL_RECOVERY_WINDOW_MS=900000                                                                                          
+RL_RECOVERY_MAX=3                                                                                                                                                                                                                             
+
+# where the single recovery page lives                                                                                 
+FRONTEND_RECOVERY_PATH=/recovery                                                                                                                                                                                                                
+
+# recovery session TTL (15 min)                                                                                         
+RECOVERY_SESSION_TTL_MS=900000                                                                                                                        
+
+# Token TTL (DB expiry)                                                                                                 
+RECOVERY_TOKEN_TTL_MS=900000                                                                                                                                                                                                                    
+
+# optional but recommended: hardens token hashing                                                                       
+RECOVERY_TOKEN_PEPPER=replace-with-your-long-random-secret                                                                                                                                                                               
+
+# enforce a token type string for magic links                                                                 
+RECOVERY_TOKEN_TYPE=RECOVERY                                                                                                                                                                                                                    
+
+# SMTP                                                                                                                  
+EMAIL_SMTP_HOST=smtp.mailgun.org                                                                                        
+EMAIL_SMTP_PORT=2525                                                                                                    
+EMAIL_SMTP_USER=yourusername@mg2.putyourdomain.com                                                                                 
+EMAIL_SMTP_PASS=replace-with-your-long-random-secret                                                      
+EMAIL_FROM="IDSafe <no-reply@mg2.putyourdomain.com>"                                                                                                                                                                                           
+
+# ConfigService                                                                                                         
+CONFIG_CACHE_TTL_MS=60000                                                                                                                                                                                                                       
+
+# Admin login flow                                                                                                      
+ADMIN_OTP_PEPPER=replace-with-your-long-random-secret                                                                                                                                                                                         
+
+WEBAUTHN_RP_ID=putyourdomain.com                                                                                            
+WEBAUTHN_RP_NAME=IDSafe                                                                                                 
+WEBAUTHN_EXPECTED_ORIGIN=https://putyourdomain.com

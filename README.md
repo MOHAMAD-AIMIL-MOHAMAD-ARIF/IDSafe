@@ -1,2 +1,0 @@
-# IDSafe
-Projek Sarjana Muda

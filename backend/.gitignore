@@ -1,5 +1,6 @@
 node_modules
 # Keep environment variables out of version control
 .env
-.env-for-production.txt
+.env-for-development(mine).txt
+.env-for-production(mine).txt
 /src/generated/prisma

@@ -1,0 +1,79 @@
+# Rename this file to: .env
+
+# Environment variables declared in this file are NOT automatically loaded by Prisma.
+# Please add `import "dotenv/config";` to your `prisma.config.ts` file, or use the Prisma CLI with Bun
+# to load environment variables from .env files: https://pris.ly/prisma-config-env-vars.
+
+# Prisma supports the native connection string format for PostgreSQL, MySQL, SQLite, SQL Server, MongoDB and CockroachDB.
+# See the documentation for all the connection string options: https://pris.ly/d/connection-strings
+
+# The following `prisma+postgres` URL is similar to the URL produced by running a local Prisma Postgres
+# server with the `prisma dev` CLI command, when not choosing any non-default ports or settings. The API key, unlike the
+# one found in a remote Prisma Postgres URL, does not contain any sensitive information.
+
+
+NODE_ENV=development
+PORT=4000
+
+# DB
+DATABASE_URL="postgresql://idsafe_user:yourDBPasswordHere@localhost:5432/idsafe_db?schema=public"
+
+# Used to build the clickable magic link (backend verify URL)
+BACKEND_ORIGIN=http://localhost:4000
+
+# CORS (Next.js)
+FRONTEND_ORIGIN=http://localhost:3000
+
+# Sessions
+SESSION_SECRET=replace-with-your-long-random-secret
+SESSION_NAME=idsafe.sid
+# SESSION_MAX_AGE_MS=1800000
+
+# Proxy/HTTPS
+TRUST_PROXY=false
+FORCE_HTTPS=false
+COOKIE_SECURE=false
+COOKIE_SAMESITE=lax
+
+# Rate limiting
+RL_AUTH_WINDOW_MS=600000
+RL_AUTH_MAX=100
+RL_RECOVERY_WINDOW_MS=3600000
+RL_RECOVERY_MAX=100
+
+# where the single recovery page lives
+FRONTEND_RECOVERY_PATH=/recovery
+
+# recovery session TTL (15 min)
+RECOVERY_SESSION_TTL_MS=900000
+
+# Token TTL (DB expiry)
+RECOVERY_TOKEN_TTL_MS=900000
+
+# optional but recommended: hardens token hashing
+RECOVERY_TOKEN_PEPPER=replace-with-your-long-random-secret
+
+# enforce a token type string for magic links
+RECOVERY_TOKEN_TYPE=RECOVERY
+
+# SMTP
+EMAIL_SMTP_HOST=smtp.gmail.com
+EMAIL_SMTP_PORT=587
+EMAIL_SMTP_USER=putyouremailhere@gmail.com
+EMAIL_SMTP_PASS=put-your-password-here
+EMAIL_FROM="IDSafe putyouremailhere@gmail.com"
+
+# ConfigService
+CONFIG_CACHE_TTL_MS=60000
+
+WEBAUTHN_RP_ID=localhost
+WEBAUTHN_RP_NAME=IDSafe
+WEBAUTHN_EXPECTED_ORIGIN=http://localhost:3000
+
+# Admin login flow
+ADMIN_OTP_PEPPER=replace-with-your-long-random-secret
+
+
+
+
+
