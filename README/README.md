@@ -14,7 +14,7 @@ The goal of IDSafe is to provide a zero-knowledge password manager architecture 
 2. WebAuthn-based **passwordless authentication** using platform authenticators such as biometric unlock or device screen lock.
 3. **AES-256-GCM authenticated encryption** for vault entry encryption.
 4. **Per-user vault Data Encryption Key (DEK)** generated during initial account setup. *(more on DEK at Section 6: Keys Hierarchy in IDSafe)*
-5. Recovery passphrase flow using **Argon2id to derive a Key Encryption Key (KEK)** for wrapping the vault key backup. *(more on the recovery flow at Section 7: User Recovery Flow)*
+5. Recovery passphrase flow using **Argon2id to derive a Key Encryption Key (KEK)** for wrapping the vault key backup. *(more on the recovery flow at Section 8: User Recovery Flow)*
 6. **Device-bound key wrapping**, where each trusted device has its own device keypair and server-stored wrapped DEK. *(more on device-binding at Section 6: Device-Bound Key Wrapping)*
 7. Secure session management using **server-side sessions and cookie-based** authentication.
 8. **PostgreSQL-backed persistence** for users, WebAuthn credentials, encrypted vault entries, recovery data, device keys, sessions, audit logs, and system configuration.
